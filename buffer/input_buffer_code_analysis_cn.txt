@@ -1,0 +1,457 @@
+input_buffer_src_circular_full.sv 代码分析
+=========================================
+
+文件位置：
+buffer/input_buffer_src_circular_full.sv
+
+本文档用于说明修改后的 input_buffer 模块结构、主要信号含义和工作流程。
+
+
+一、模块总体功能
+----------------
+修改后的 input_buffer 目标是支持：
+
+    同一个 VC / input_buffer / circular_buffer 中存放多个完整 packet。
+
+当前结构可以理解为：
+
+    input_buffer
+      ├─ circular_buffer：存放 flit 数据
+      └─ packet metadata FIFO：存放每个 packet 的控制信息
+
+其中 circular_buffer 存的是：
+
+    HEAD / BODY / TAIL / HEADTAIL 等 flit
+
+metadata FIFO 存的是每个 packet 对应的控制信息：
+
+    out_port
+    downstream_vc
+    vc_allocated
+
+这样，一个 buffer 中可以排多个 packet，但传输时仍然只处理队头 packet。
+
+
+二、模块接口说明
+----------------
+主要输入信号：
+
+    data_i
+        输入 flit，不带 VC 信息。
+
+    write_i
+        上游请求写入一个 flit。
+
+    read_i
+        下游或 switch allocator 请求读出一个 flit。
+
+    vc_new_i
+        VC allocator 分配的新 downstream VC。
+
+    vc_valid_i
+        VC allocator 返回结果有效。
+
+    out_port_i
+        当前输入 packet 的路由输出方向。
+
+主要输出信号：
+
+    data_o
+        输出 flit，带 downstream VC。
+
+    is_full_o / is_empty_o
+        flit circular buffer 的满/空状态。
+
+    vc_request_o
+        队头 packet 请求 VC allocation。
+
+    switch_request_o
+        队头 packet 请求 switch allocation。
+
+    vc_allocatable_o
+        队头 packet 结束时拉高，用于释放 VC。
+
+    downstream_vc_o
+        当前队头 packet 分配到的 downstream VC。
+
+    error_o
+        非法操作标志。
+
+
+三、原始 FSM 逻辑
+-----------------
+原始版本中有一套 FSM：
+
+    IDLE -> VA -> SA
+
+其中：
+
+    IDLE
+        空闲，等待新 packet 的 HEAD。
+
+    VA
+        Virtual Channel Allocation，等待分配 downstream VC。
+
+    SA
+        Switch Allocation，等待通过 switch 输出 flit。
+
+原始版本的问题是：
+
+    只有一套 FSM
+    只有一份 out_port
+    只有一份 downstream_vc
+    只有一个 end_packet
+
+因此原始 input_buffer 只能描述一个 packet 的状态。
+
+如果第一个 packet 还没结束，第二个 packet 的 HEAD 提前进入，原始逻辑会
+认为这是非法操作。
+
+在当前修改版中，原始 FSM 相关代码被注释保留，用于对比参考。
+
+
+四、新增 packet metadata 结构
+-----------------------------
+新增结构：
+
+    packet_meta_t
+
+它包含三个字段：
+
+    out_port
+        该 packet 要走的输出方向。
+
+    downstream_vc
+        该 packet 被分配到的下游 VC。
+
+    vc_allocated
+        表示该 packet 是否已经完成 VC allocation。
+
+作用：
+
+    每个 packet 都有一份 metadata。
+    这样 buffer 里即使有多个 packet，也能分别保存它们的路由和 VC 信息。
+
+
+五、metadata FIFO
+-----------------
+新增了一个 packet 级 FIFO：
+
+    meta_mem
+    meta_rd_ptr
+    meta_wr_ptr
+    num_packets
+
+含义：
+
+    meta_mem
+        存放多个 packet 的 metadata。
+
+    meta_rd_ptr
+        指向当前队头 packet。
+
+    meta_wr_ptr
+        指向下一个新 packet metadata 的写入位置。
+
+    num_packets
+        当前 buffer 中排队的 packet 数量。
+
+因此，修改后的 buffer 中有两个队列：
+
+    1. circular_buffer
+       存 flit。
+
+    2. metadata FIFO
+       存 packet 级控制信息。
+
+
+六、flit circular buffer
+------------------------
+原来的 circular_buffer 仍然保留，用于存放 flit 数据。
+
+修改后，circular_buffer 中允许出现：
+
+    HEAD P0
+    BODY P0
+    TAIL P0
+    HEAD P1
+    BODY P1
+    TAIL P1
+
+也就是说，一个 circular_buffer 可以连续存放多个完整 packet。
+
+但是 circular_buffer 只负责保存 flit，不保存 packet 的 out_port 和
+downstream_vc。
+
+这些 packet 级信息由 metadata FIFO 保存。
+
+
+七、队头 packet 判断
+--------------------
+主要信号：
+
+    has_packet
+        num_packets 不为 0，表示当前至少有一个 packet。
+
+    meta_head
+        metadata FIFO 队头 entry，也就是当前要处理的 packet。
+
+    head_allocated
+        队头 packet 是否已经完成 VC allocation。
+
+    meta_full
+        metadata FIFO 是否已满。
+
+    meta_space_available
+        metadata FIFO 是否还有空间。如果同一周期有 packet 被 pop，也认为
+        有空间。
+
+这些信号用于判断当前能否写入新 packet、能否读出 flit，以及是否需要发
+VC 请求。
+
+
+八、写入控制逻辑
+----------------
+写入相关信号：
+
+    accept_write
+    write_order_ok
+    write_packet_open
+    meta_push_cmd
+
+write_packet_open 的含义：
+
+    当前是否正在写一个尚未结束的 packet。
+
+例如：
+
+    写入 HEAD 后，write_packet_open = 1
+    写入 TAIL 后，write_packet_open = 0
+
+write_order_ok 用于保证 packet 不交织。
+
+允许的顺序：
+
+    HEAD P0 -> BODY P0 -> TAIL P0 -> HEAD P1
+
+不允许的顺序：
+
+    HEAD P0 -> HEAD P1 -> TAIL P0
+
+也就是说，当前实现允许同一个 buffer 存多个 packet，但要求 packet 必须
+完整顺序写入，不能交织写入。
+
+当写入 HEAD 或 HEADTAIL 时：
+
+    meta_push_cmd = 1
+
+这会在 metadata FIFO 中 push 一个新的 packet entry。
+
+
+九、读出控制逻辑
+----------------
+读出相关信号：
+
+    accept_read
+    meta_pop_cmd
+
+accept_read 的条件：
+
+    read_i = 1
+    队头 packet 已完成 VC allocation
+    circular_buffer 非空
+
+也就是说，如果队头 packet 还没有分配到 downstream VC，即使外部 read_i
+拉高，也不会真正读出 flit。
+
+当读出的 flit 是 TAIL 或 HEADTAIL 时：
+
+    meta_pop_cmd = 1
+
+这表示当前队头 packet 结束，需要 pop 掉它的 metadata。
+
+同时：
+
+    vc_allocatable_o = 1
+
+用于通知外部该 VC 可以释放。
+
+
+十、VC allocation 控制
+----------------------
+队头 packet 还没有分配 VC 时：
+
+    vc_request_o = 1
+
+当 VC allocator 返回：
+
+    vc_valid_i = 1
+
+模块把：
+
+    vc_new_i
+
+写入队头 metadata：
+
+    meta_mem[meta_rd_ptr].downstream_vc
+
+并把：
+
+    vc_allocated = 1
+
+这样队头 packet 后续就可以请求 switch allocation。
+
+
+十一、Switch allocation 控制
+----------------------------
+当满足以下条件时：
+
+    队头 packet 已完成 VC allocation
+    circular_buffer 非空
+
+模块输出：
+
+    switch_request_o = 1
+
+这表示队头 packet 可以请求通过 crossbar / switch 发送 flit。
+
+注意：
+
+    后面的 packet 即使已经存在 circular_buffer 中，也不会提前请求 switch。
+    当前实现只处理队头 packet。
+
+
+十二、输出数据逻辑
+------------------
+输出 flit 的 label 和 data 来自 circular_buffer：
+
+    data_o.flit_label = read_flit.flit_label
+    data_o.data       = read_flit.data
+
+输出 flit 的 VC ID 来自队头 metadata：
+
+    data_o.vc_id = meta_head.downstream_vc
+
+当前输出方向来自队头 metadata：
+
+    out_port_o = meta_head.out_port
+
+当前 downstream VC 输出也是队头 metadata 中保存的值：
+
+    downstream_vc_o = meta_head.downstream_vc
+
+因此，每个 packet 可以使用自己分配到的 downstream VC。
+
+
+十三、metadata FIFO 指针更新
+----------------------------
+metadata FIFO 有四种更新情况：
+
+    1. 只 push
+       新 packet 进入队列，meta_wr_ptr 加 1，num_packets 加 1。
+
+    2. 只 pop
+       队头 packet 结束，meta_rd_ptr 加 1，num_packets 减 1。
+
+    3. 同时 push 和 pop
+       一个 packet 结束，同时一个新 packet 进入，num_packets 不变。
+
+    4. 不 push 也不 pop
+       指针和数量保持不变。
+
+increase_meta_ptr 函数用于实现循环指针：
+
+    如果指针到 BUFFER_SIZE-1，下一个回到 0；
+    否则指针加 1。
+
+
+十四、error_o 逻辑
+------------------
+error_o 会在以下情况拉高：
+
+    1. 外部请求写入，但当前 flit 不允许被写入。
+       例如 buffer 满，或者 packet 顺序非法。
+
+    2. 外部请求读出，但队头 packet 没有完成 VC allocation，或者 buffer 为空。
+
+    3. VC allocator 返回 vc_valid_i，但当前没有 packet 在等待分配，或者队头
+       packet 已经分配过 VC。
+
+这些错误检查用于发现非法测试激励或协议使用错误。
+
+
+十五、当前设计特点
+------------------
+当前修改后的设计支持：
+
+    同一个 circular_buffer 中存多个完整 packet。
+
+例如：
+
+    [HEAD P0][BODY P0][TAIL P0][HEAD P1][BODY P1][TAIL P1]
+
+当前设计不支持：
+
+    多个 packet 乱序传输
+    后面的 packet 越过前面的 packet
+    packet flit 交织写入
+
+也就是说，当前设计是：
+
+    多 packet 排队
+    队头 packet 传输
+    FIFO 顺序保证
+
+
+十六、与原始版本的区别
+----------------------
+原始版本：
+
+    circular_buffer 存 flit
+    input_buffer 只有一套 FSM
+    同一个 VC 只能管理一个 packet
+
+修改后：
+
+    circular_buffer 存 flit
+    metadata FIFO 存 packet 控制信息
+    同一个 VC 可以排多个 packet
+    队头 packet 负责 VA / SA
+
+核心区别：
+
+    原始版本只能保存一个 packet 的控制信息；
+    修改后每个 packet 都有独立 metadata entry。
+
+
+十七、对拥塞感知的意义
+----------------------
+修改后，buffer 中可以出现 packet 级积压。
+
+后续拥塞感知算法可以关注：
+
+    num_packets
+    circular_buffer 的 num_flits
+    is_full_o
+    is_empty_o
+    on_off_o
+    vc_request_o 持续时间
+    switch_request_o 持续时间
+
+其中 num_packets 当前仍是 input_buffer 内部信号。
+
+如果后续拥塞感知模块需要直接使用 packet 数量，需要把 num_packets 作为
+output 端口导出。
+
+
+十八、总结
+----------
+修改后的 input_buffer 可以概括为：
+
+    flit FIFO + packet metadata FIFO
+
+flit FIFO 负责存数据；
+metadata FIFO 负责存每个 packet 的路由和 VC 状态。
+
+这种结构解决了原始 buffer 同一个 VC 只能容纳一个 packet 的问题，使同一个
+circular_buffer 可以连续存放多个完整 packet，并按 FIFO 顺序逐个传输。

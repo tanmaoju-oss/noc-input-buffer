@@ -1,0 +1,297 @@
+多 packet 输入缓冲区修改说明
+============================
+
+日期：2026-06-11
+目录：buffer/
+
+相关文件
+--------
+1. circular_buffer_Xiugai3.sv
+2. input_buffer_src_circular_full.sv
+3. tb_input_buffer_multi_packet.sv
+4. project_multi_packet_sim/  仿真输出目录
+
+
+一、修改背景
+------------
+原始 input_buffer 采用的是单 packet 控制方式，内部只有一套 FSM：
+
+    IDLE -> VA -> SA
+
+同时，它也只有一份 packet 级别的信息：
+
+    out_port_o
+    downstream_vc_o
+    end_packet
+
+这意味着：虽然 circular_buffer 本身是一个 FIFO，物理上可以存多个 flit，
+但 input_buffer 的控制逻辑只能描述当前这一个 packet。
+
+因此原始设计支持这种情况：
+
+    [HEAD P0][BODY P0][TAIL P0]
+
+但不能安全支持这种情况：
+
+    [HEAD P0][BODY P0][TAIL P0][HEAD P1][BODY P1][TAIL P1]
+
+也就是说，原始版本中，同一个 VC / input_buffer / circular_buffer 里，
+逻辑上最多只能容纳一个 packet。第一个 packet 没结束时，如果第二个
+packet 的 HEAD 进入，会被判定为非法并触发 error_o。
+
+
+二、修改目的
+------------
+这次修改的目标是实现一个最小可行版本，使同一个 input_buffer，也就是
+同一个 VC 内部的 circular_buffer，可以连续存放多个完整 packet。
+
+目标行为如下：
+
+    1. 同一个 circular_buffer 可以排多个 packet 的 flit。
+    2. packet 内部顺序必须保持正确，不能交织。
+    3. 只有队头 packet 可以申请 VC allocation。
+    4. 只有队头 packet 可以申请 switch allocation。
+    5. 队头 packet 的 TAIL 或 HEADTAIL 被读出后，才释放该 packet 的
+       metadata，然后下一个 packet 成为新的队头。
+
+这个设计是为了给后续拥塞感知算法打基础。因为拥塞感知通常需要观察：
+
+    buffer 中积压了多少 flit
+    buffer 中积压了多少 packet
+    packet 是否长时间等待 VA
+    packet 是否长时间等待 SA
+
+
+三、input_buffer_src_circular_full.sv 的修改
+--------------------------------------------
+为什么修改：
+
+原始 input_buffer 只有一份 packet 信息，无法同时记录多个 packet 的
+out_port 和 downstream_vc。因此，要让一个 circular_buffer 存多个
+packet，就必须额外增加 packet metadata 队列。
+
+主要修改内容：
+
+1. 保留原始单 packet FSM 代码
+
+   原来的 IDLE / VA / SA 控制块没有直接删除，而是注释保留，方便之后
+   对比修改前后的逻辑。
+
+2. 新增 packet metadata 类型
+
+   新增了 packet_meta_t，用于记录每个 packet 的控制信息：
+
+       out_port
+       downstream_vc
+       vc_allocated
+
+   其中：
+
+       out_port       表示该 packet 要走哪个输出方向
+       downstream_vc  表示下游分配到的 VC
+       vc_allocated   表示该 packet 是否已经完成 VC allocation
+
+3. 新增 packet metadata circular queue
+
+   新增了以下结构：
+
+       meta_mem
+       meta_rd_ptr
+       meta_wr_ptr
+       num_packets
+
+   这相当于给 packet 级别的信息也做了一个 FIFO。
+
+   flit 数据仍然存在原来的 circular_buffer 中；
+   packet 信息则存在 meta_mem 中。
+
+4. 新增写入顺序检查
+
+   新增了：
+
+       write_packet_open
+       write_order_ok
+
+   作用是保证 packet 不会交织。
+
+   允许的写入顺序：
+
+       HEAD P0 -> BODY P0 -> TAIL P0 -> HEAD P1
+
+   不允许的写入顺序：
+
+       HEAD P0 -> HEAD P1 -> TAIL P0
+
+   也就是说，可以排多个 packet，但必须一个 packet 写完整后，才能开始
+   下一个 packet。
+
+5. 改成由 metadata 队头驱动 VA / SA
+
+   新逻辑中，只有 metadata queue 的队头 packet 能发请求：
+
+       vc_request_o     = 队头 packet 存在，并且还没有分配 downstream VC
+       switch_request_o = 队头 packet 已经分配 VC，并且 flit FIFO 非空
+
+   后面的 packet 虽然已经存在 circular_buffer 里，但不会提前申请 VC，
+   也不会越过前面的 packet 传输。
+
+6. 输出 VC ID 来自队头 packet metadata
+
+   输出 flit 时：
+
+       data_o.vc_id = meta_head.downstream_vc
+
+   这样每个 packet 可以使用自己分配到的 downstream VC。
+
+7. TAIL 读出时释放队头 packet
+
+   当读出的 flit 是 TAIL 或 HEADTAIL 时：
+
+       metadata queue pop
+       vc_allocatable_o 拉高一个周期
+
+   然后下一个 packet 成为新的队头。
+
+最终效果：
+
+input_buffer 现在可以支持同一个 VC 内部排多个 packet，同时仍然保持
+FIFO 顺序，只处理队头 packet。
+
+
+四、circular_buffer_Xiugai3.sv 的修改
+--------------------------------------
+为什么修改：
+
+仿真编译时，Vivado xvlog 报错：
+
+    identifier 'read_ptr' is used before its declaration
+
+原因是原文件中有这一句：
+
+    assign first_flit_o = memory[read_ptr]
+
+但它写在 read_ptr 声明之前。
+
+修改内容：
+
+只是把这句 assign 移到了 read_ptr 和 write_ptr 声明之后。
+
+没有修改 circular_buffer 的 FIFO 功能。
+
+最终效果：
+
+circular_buffer_Xiugai3.sv 可以通过 xvlog 编译。
+
+仿真时仍有一个 warning：
+
+    first_flit_o remains unconnected
+
+这是无害的，因为当前 input_buffer 并没有使用 first_flit_o 这个输出。
+
+
+五、tb_input_buffer_multi_packet.sv 的新增
+------------------------------------------
+为什么新增：
+
+原来的 tb_input_buffer.sv 不能直接验证“同一个 circular buffer 中同时
+存放多个 packet”这个功能。它基本是一个 packet 读完后再处理下一个。
+
+新 testbench 的测试目标：
+
+验证修改后的 input_buffer 是否支持：
+
+    同一个 VC 中连续写入两个 packet，
+    第二个 packet 在第一个 packet 还没读出前，能够留在 circular_buffer 中等待。
+
+测试流程：
+
+1. 连续写入 packet 0：
+
+       HEAD P0
+       BODY P0
+       TAIL P0
+
+2. 不读取 packet 0，马上继续写入 packet 1：
+
+       HEAD P1
+       BODY P1
+       TAIL P1
+
+3. 检查此时 buffer 非空，并且只有队头 packet 0 发起 vc_request_o。
+
+4. 给 packet 0 分配 downstream VC。
+
+5. 读出 packet 0，并检查：
+
+       data_o 顺序正确
+       data_o.vc_id 正确
+       out_port_o 正确
+       downstream_vc_o 正确
+       TAIL 读出后 vc_allocatable_o 拉高
+
+6. packet 0 结束后，检查 packet 1 成为新的队头，并开始发 vc_request_o。
+
+7. 给 packet 1 分配 downstream VC。
+
+8. 读出 packet 1，并检查输出是否正确。
+
+9. 最后检查 buffer 变空，并且 error_o 没有拉高。
+
+最终效果：
+
+这个 testbench 可以直接验证修改后的 multi-packet buffer 行为。
+
+
+六、仿真过程
+------------
+仿真输出目录：
+
+    buffer/project_multi_packet_sim/
+
+使用的命令：
+
+    xvlog --sv ..\noc.sv ..\circular_buffer_Xiugai3.sv ..\input_buffer_src_circular_full.sv ..\tb_input_buffer_multi_packet.sv
+
+    xelab tb_input_buffer_multi_packet -debug typical -timescale 1ns/1ps -s tb_input_buffer_multi_packet_sim
+
+    xsim tb_input_buffer_multi_packet_sim -runall
+
+仿真结果：
+
+    [MULTI_PACKET] PASSED
+    $finish called at time : 510 ns
+
+生成的主要文件：
+
+    multi_packet_out.vcd
+    tb_input_buffer_multi_packet_sim.wdb
+    xvlog.log
+    xelab.log
+    xsim.log
+
+
+七、最终结论
+------------
+修改后的 buffer 已经实现了最小目标：
+
+    一个 circular_buffer 可以存放多个完整 packet。
+
+当前实现仍然保持简单的顺序传输规则：
+
+    只处理队头 packet
+    后面的 packet 只能排队等待
+    不允许后面的 packet 越过前面的 packet
+    不允许多个 packet 的 flit 交织
+
+这对拥塞感知算法来说是一个基础，因为现在 buffer 中可以形成 packet 级
+积压。后续可以基于这些状态进行拥塞判断：
+
+    num_packets
+    is_full_o
+    is_empty_o
+    on_off_o
+    vc_request_o
+    switch_request_o
+
+其中 num_packets 目前还是 input_buffer 内部信号。如果后续拥塞感知模块
+需要直接使用 packet 数量，需要把 num_packets 作为 output 端口导出。

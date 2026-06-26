@@ -1,0 +1,42 @@
+# Modify add Git ignore rules for source-focused project backup, Michael Tan, 20260626
+
+# Vivado projects and generated simulation outputs
+project_*/
+*.jou
+*.log
+*.pb
+*.wdb
+*.vcd
+*.str
+*.rpt
+*.dcp
+*.bit
+*.ltx
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.srcs/
+*.gen/
+.Xil/
+xsim.dir/
+
+# Generated simulation work directories under test/vivado_sim
+test/vivado_sim/design_compile/
+test/vivado_sim/*_sim/
+
+# Manual backup folders and archives
+test - *备份/
+test - *备份.zip
+*.zip
+
+# Non-source report/material folder, keep out of code backup by default
+kpi/
+
+# Temporary/editor files
+*.tmp
+*.bak
+~$*
+.DS_Store
+Thumbs.db
