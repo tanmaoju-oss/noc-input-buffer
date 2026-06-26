@@ -271,6 +271,7 @@ Current Git setup notes:
 - `.gitignore` was added to keep source files, tb files, scripts, and docs in Git while excluding Vivado generated outputs, waveform/database files, and manual backup archives.
 - `kpi/` is ignored by default because it appears to contain report/material files rather than active NoC source.//Modify clarify kpi folder is excluded from code backup, Michael Tan, 20260626
 - Local Git repository has been initialized, current branch is `main`, and the first backup commit is `8b2abe7 Initial NoC source backup`.//Modify record completed local Git initialization, Michael Tan, 20260626
+- GitHub remote `origin` is bound to `https://github.com/tanmaoju-oss/noc-input-buffer.git`, and local `main` tracks `origin/main`.//Modify record GitHub remote binding, Michael Tan, 20260626
 - Initial local Git setup should use repository-local identity if global identity is not configured:
 
 ```powershell
