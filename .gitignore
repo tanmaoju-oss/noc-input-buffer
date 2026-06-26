@@ -34,6 +34,10 @@ test - *备份.zip
 # Non-source report/material folder, keep out of code backup by default
 kpi/
 
+# Local handoff notes, keep only on this machine
+Remember.md
+项目说明.md
+
 # Temporary/editor files
 *.tmp
 *.bak
