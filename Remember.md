@@ -475,6 +475,173 @@ Interpretation:
 
 //Modify record completed queue-based Noxim-style 5x5 sweep simulation results, Michael Tan, 20260701
 
+## Active Task Started 2026-07-09: Queue-Based 5x5 Sweep With Low Injection Rates
+
+Goal:
+
+- Create a new queue-based 5x5 Noxim-style sweep tb based on the existing queue version.
+- Add injection-rate points before 0.1 so the low-load region can be checked; theoretically this part should be nearly horizontal.
+- Keep previous queue tb and RTL source design files unchanged.
+- Generate a dedicated simulation result directory and latency curve.
+
+Planned files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
+
+Planned rates:
+
+- 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50
+
+//Modify record start of low-rate queue-based Noxim-style 5x5 sweep task, Michael Tan, 20260709
+
+## Latest Low-Rate Queue-Based Noxim-Style 5x5 Sweep Result
+
+Date: 2026-07-09
+
+Added files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
+
+Generated files:
+
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate_sim/injection_latency_results.txt`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate_sim/injection_latency_curve_full.png`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate_sim/injection_latency_curve_lowrate_zoom.png`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate_sim/xsim.log`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate_sim/out.vcd`
+
+Vivado command:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\test\vivado_sim\run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
+```
+
+Verified result:
+
+```text
+injection_rate_permille injection_rate warmup_cycles measure_cycles drain_limit_cycles drain_used_cycles measure_generated measure_enqueued measure_queue_full measure_injected measure_received max_source_queue avg_latency_cycles_x1000 error_count
+10 0.010 200 1000 8000 9 218 218 0 218 218 1 9724 0
+20 0.020 200 1000 8000 9 491 491 0 491 491 1 10109 0
+30 0.030 200 1000 8000 12 763 763 0 763 763 1 9854 0
+40 0.040 200 1000 8000 13 992 992 0 992 992 2 10204 0
+50 0.050 200 1000 8000 15 1261 1261 0 1261 1261 2 10268 0
+60 0.060 200 1000 8000 20 1437 1437 0 1437 1437 2 10503 0
+70 0.070 200 1000 8000 14 1789 1789 0 1789 1789 2 10839 0
+80 0.080 200 1000 8000 12 1999 1999 0 1999 1999 2 11143 0
+90 0.090 200 1000 8000 16 2227 2227 0 2227 2227 2 11602 0
+100 0.100 200 1000 8000 17 2522 2522 0 2522 2522 3 11903 0
+200 0.200 200 1000 8000 484 4989 4989 0 4989 4989 88 194311 0
+300 0.300 200 1000 8000 1405 7530 7530 0 7530 7530 228 671800 0
+400 0.400 200 1000 8000 2068 9943 9943 0 9943 9943 325 1080137 0
+500 0.500 200 1000 8000 3163 12522 12522 0 12522 12522 477 1540083 0
+```
+
+Interpretation:
+
+- The low-rate queue-based sweep completed successfully in Vivado/xsim.
+- `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0` for every injection rate.
+- Average latency points in cycles are 9.724, 10.109, 9.854, 10.204, 10.268, 10.503, 10.839, 11.143, 11.602, 11.903, 194.311, 671.800, 1080.137, and 1540.083.
+- The 0.01 to 0.10 region is near the expected low-load horizontal region around 10 to 12 cycles, while 0.20 and above show source-queue delay growth.
+
+//Modify record completed low-rate queue-based Noxim-style 5x5 sweep simulation results, Michael Tan, 20260709
+
+## Active Task Started 2026-07-09: Queue-Based 5x5 Sweep With Denser Knee Rates
+
+Goal:
+
+- Create a new queue-based 5x5 Noxim-style sweep tb based on the low-rate queue version.
+- Keep existing low-rate queue tb and RTL source design files unchanged.
+- Add denser injection-rate points around 0.10 to 0.30 to check whether the high-rate curve only looks linear because sampling is too sparse.
+- Generate a dedicated simulation result directory and latency curve.
+
+Planned files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
+
+Planned rates:
+
+- 0.01, 0.03, 0.05, 0.07, 0.09, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.35, 0.40, 0.45, 0.50
+
+//Modify record start of knee-rate queue-based Noxim-style 5x5 sweep task, Michael Tan, 20260709
+
+## Latest Knee-Rate Queue-Based Noxim-Style 5x5 Sweep Result
+
+Date: 2026-07-09
+
+Added files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
+
+Generated files:
+
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_sim/injection_latency_results.txt`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_sim/injection_latency_curve_full.png`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_sim/injection_latency_curve_knee_zoom.png`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_sim/xsim.log`
+- `test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_sim/out.vcd`
+
+Vivado command:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\test\vivado_sim\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
+```
+
+Verified result:
+
+```text
+injection_rate avg_latency_cycles
+0.010 9.724
+0.030 9.962
+0.050 10.308
+0.070 10.801
+0.090 11.374
+0.100 11.923
+0.120 13.852
+0.140 20.497
+0.160 51.046
+0.180 111.037
+0.200 199.594
+0.220 310.151
+0.240 418.607
+0.260 444.717
+0.280 553.714
+0.300 614.892
+0.350 831.810
+0.400 1064.048
+0.450 1331.869
+0.500 1560.861
+```
+
+Interpretation:
+
+- The dense knee-rate queue-based sweep completed successfully in Vivado/xsim.
+- `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0` for every injection rate.
+- Dense sampling shows the latency knee starts around 0.14 to 0.18.
+- The previously observed almost-linear high-rate segment was partly caused by sparse sampling at only 0.2/0.3/0.4/0.5.
+
+//Modify record completed knee-rate queue-based Noxim-style 5x5 sweep simulation results, Michael Tan, 20260709
+
+## Active Task Started 2026-07-09: 4-Flit Queue-Based 5x5 Knee Sweep
+
+Goal:
+
+- Create a new 4-flit packet version based on the queue knee tb.
+- Keep existing queue knee tb and RTL source design files unchanged.
+- Use packet format `HEAD + BODY + BODY + TAIL`.
+- Keep packet-level latency measured from packet generation time to TAIL arrival time.
+- Reuse the knee-rate injection points so the 4-flit curve can be compared with the previous 2-flit packet curve.
+
+Planned files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
+
+//Modify record start of 4-flit queue-based Noxim-style 5x5 knee sweep task, Michael Tan, 20260709
+
 ## Active Task Started 2026-07-01: 2x3 Four-Flit Packet Injection Sweep
 
 Goal:
@@ -669,3 +836,77 @@ Important wording direction:
 - Avoid saying "20 sv files" in the MBO; describe it as `test目录下NoC设计逻辑相关SystemVerilog代码`.
 
 //Modify record latest MBO v0.8 structure: test code optimization, simulation verification, design logic optimization, Michael Tan, 20260629
+
+## Active Task Completed 2026-07-09: 4-Flit Queue-Based 5x5 Knee Sweep
+
+User request:
+
+- Based on the previous queue-based knee version, create a packet=4-flit version and inspect the final latency curve.
+- Keep old tb files unchanged; create a new tb and a new simulation entry.
+
+New files:
+
+- `test/tb/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv`
+- `test/vivado_sim/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
+
+Key tb behavior:
+
+- `PACKET_FLIT_NUM = 4`
+- Packet format is `HEAD + BODY + BODY + TAIL`.
+- Injection rate is still packet injection probability per node per cycle.
+- Average latency is packet latency, measured from packet generation/source-queue entry to TAIL arrival.
+- BODY flits are checked for destination correctness but are not counted as received packets.
+
+Simulation command:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\test\vivado_sim\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
+```
+
+Result directory:
+
+`test/vivado_sim/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim`
+
+Important outputs:
+
+- `injection_latency_results.txt`
+- `xsim.log`
+- `out.vcd`
+- `injection_latency_curve_full.png`
+- `injection_latency_curve_knee_zoom.png`
+- `injection_latency_curve_compare_2flit_4flit.png`
+
+Result summary:
+
+```text
+rate latency_cycles injected received queue_full errors
+0.010 11.926 218 218 0 0
+0.030 12.885 717 717 0 0
+0.050 14.321 1246 1246 0 0
+0.070 17.837 1726 1726 0 0
+0.090 32.167 2272 2272 0 0
+0.100 43.648 2508 2508 0 0
+0.120 144.500 3013 3013 0 0
+0.140 322.095 3549 3549 0 0
+0.160 443.284 3953 3953 0 0
+0.180 549.853 4488 4488 0 0
+0.200 708.787 5017 5017 0 0
+0.220 876.969 5571 5571 0 0
+0.240 1012.406 6116 6116 0 0
+0.260 1078.915 6430 6430 0 0
+0.280 1278.587 6915 6915 0 0
+0.300 1328.675 7406 7406 0 0
+0.350 1724.089 8697 8697 0 0
+0.400 2059.889 9894 9894 0 0
+0.450 2521.052 11161 11161 0 0
+0.500 2863.854 12588 12588 0 0
+```
+
+Conclusion:
+
+- Vivado/xsim completed all 20 injection-rate points.
+- For every point, `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- Compared with the previous 2-flit knee run, the 4-flit packet curve rises earlier and higher because the x-axis remains packet injection rate while each packet consumes more flit bandwidth.
+- No RTL source design files were modified for this task; only a new tb, a new simulation entry, generated result files, and documentation were changed.
+
+//Modify record completed 4-flit 5x5 queue-knee sweep simulation and plot outputs, Michael Tan, 20260709
