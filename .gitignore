@@ -22,9 +22,11 @@ project_*/
 .Xil/
 xsim.dir/
 
-# Generated simulation work directories under test/vivado_sim
-test/vivado_sim/design_compile/
-test/vivado_sim/*_sim/
+# Generated simulation work directories, separated by execution platform
+vivado_sim_windows/design_compile/
+vivado_sim_windows/*_sim/
+vivado_sim_wsl/design_compile/
+vivado_sim_wsl/*_sim/
 
 # Manual backup folders and archives
 test - *备份/
@@ -35,8 +37,8 @@ test - *备份.zip
 kpi/
 
 # Local handoff notes, keep only on this machine
-Remember.md
-项目说明.md
+AGENTS.md
+README.md
 
 # Temporary/editor files
 *.tmp

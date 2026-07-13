@@ -9,9 +9,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $ScriptDir "..\..")).Path
-$TestDir = Join-Path $RepoRoot "test"
-$TbDir = Join-Path $TestDir "tb" # Modify to keep all testbench files under test/tb, Michael Tan, 20260617
+$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $ScriptDir "..")).Path # Modify resolve repository root from top-level scripts directory, Michael Tan, 20260713
+$SourceDir = Join-Path $RepoRoot "src" # Modify use top-level RTL source directory, Michael Tan, 20260713
+$TbDir = Join-Path $RepoRoot "testbench" # Modify use top-level testbench directory, Michael Tan, 20260713
+$SimRoot = Join-Path $RepoRoot "vivado_sim_windows" # Modify route PowerShell/Windows Vivado results to the Windows-specific root, Michael Tan, 20260713
 
 . (Join-Path $ScriptDir "setup_vivado_env.ps1") -VivadoRoot $VivadoRoot
 $XvlogBat = Join-Path $VivadoBin "xvlog.bat"
@@ -19,7 +20,7 @@ $XelabBat = Join-Path $VivadoBin "xelab.bat"
 $XsimBat = Join-Path $VivadoBin "xsim.bat"
 
 if (-not $SimDir) {
-    $SimDir = Join-Path $ScriptDir "$($Top)_sim"
+    $SimDir = Join-Path $SimRoot "$($Top)_sim" # Modify pair each top module with its own result directory, Michael Tan, 20260713
 }
 
 New-Item -ItemType Directory -Path $SimDir -Force | Out-Null
@@ -78,7 +79,7 @@ $compileOrder = @(
 
 $sourceFiles = @()
 foreach ($name in $compileOrder) {
-    # Modify tb source lookup after moving testbenches into test/tb, Michael Tan, 20260617
+    # Modify resolve tb from top-level testbench and RTL from top-level src, Michael Tan, 20260713
     if ($name -eq $TbFile) {
         if ([System.IO.Path]::IsPathRooted($name)) {
             $path = $name
@@ -91,7 +92,7 @@ foreach ($name in $compileOrder) {
         }
     }
     else {
-        $path = Join-Path $TestDir $name
+        $path = Join-Path $SourceDir $name # Modify compile design files only from src, Michael Tan, 20260713
     }
 
     if (-not (Test-Path -LiteralPath $path)) {
