@@ -30,11 +30,11 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 - Linux Vivado 2025.2 已安装在 `/home/tanma/tools/Xilinx/2025.2/Vivado`。使用前执行 `source /home/tanma/tools/Xilinx/2025.2/Vivado/settings64.sh`，即可调用 `vivado`、`xvlog`、`xelab` 和 `xsim`。
 - Ubuntu 下的 GCC、G++、Make 和 Vivado/xsim 依赖已经安装。临时 `/tmp` 冒烟测试中，现有 `tb_mesh` 已输出 `[TB_MESH] PASSED`。
 - Codex 命令沙箱会让 xsim 在加载快照时出现 `ERROR: unexpected exception when evaluating tcl command`；同一快照在获准的沙箱外执行后可正常仿真。因此以后由 Codex 运行 xsim 时，应直接使用获准的 escalated execution，避免把沙箱限制误判成 RTL 或缺库错误。
-- 仓库里的 `.ps1` 脚本以及 `E:\Vivado\Vivado\2019.2` 是原 Windows 环境留下的仿真入口和工具路径。
+- Windows Vivado 2019.2 安装在 `E:\Vivado\Vivado\2019.2`，并具有综合所需许可证。以后所有 Vivado 综合均固定通过 Windows Vivado 2019.2 执行，不使用 Linux Vivado 进行综合。<!-- Modify establish Windows Vivado synthesis rule, Michael Tan, 20260729 -->
 - 本文后面保存的大量 PowerShell 命令与仿真结果属于历史记录；在 WSL 中重新验证脚本以前，不应理解为可以直接运行。
 - 已有 `xsim.log`、波形和结果文件是迁移过来的历史产物，不代表已经在新 Linux 环境重新仿真。
 
-当前已增加并验证 WSL/Linux Bash 入口 `scripts/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
+当前已增加并验证 WSL/Linux Bash 入口 `scripts/simulation/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
 
 ## 标准目录结构
 
@@ -44,17 +44,21 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 noc-input-buffer/
 ├── src/          # 只放 SystemVerilog 设计/RTL 代码
 ├── testbench/    # 统一存放所有 SystemVerilog testbench
-├── scripts/      # 统一存放 Vivado/自动化脚本
+├── scripts/
+│   ├── simulation/ # 仿真、编译检查和结果绘图脚本
+│   └── synthesis/  # Windows Vivado 综合脚本
 ├── vivado_sim_windows/ # Windows Vivado 仿真结果
-└── vivado_sim_wsl/     # WSL/Linux Vivado 仿真结果
+├── vivado_sim_wsl/     # WSL/Linux Vivado 仿真结果
+└── vivado_synthesis_windows/ # Windows Vivado 综合结果
 ```
 
 具体规则：
 
 - `src/` 只放项目设计代码，不放 tb、脚本、日志、波形或 Vivado 生成文件。
 - 所有 tb 文件直接放在顶层 `testbench/`，不要再创建 `src/tb/`、`test/tb/` 等目录。
-- Vivado 和自动化入口脚本统一放在顶层 `scripts/`。
+- 仿真、编译检查和结果绘图脚本统一放在 `scripts/simulation/`；Windows Vivado 综合脚本统一放在 `scripts/synthesis/`。
 - 每个 tb 使用独立结果目录：Windows 结果放 `vivado_sim_windows/<顶层模块名>_sim/`，WSL/Linux 结果放 `vivado_sim_wsl/<顶层模块名>_sim/`。
+- Windows Vivado 综合结果放在 `vivado_synthesis_windows/<顶层模块名>_synthesis/`，与仿真结果分开保存。
 - 新增实验时，tb、运行脚本和结果目录应使用一致的描述性名称，不能复用其他 tb 的结果目录。
 - 仿真生成物不能散落到项目根目录、`src/` 或 `testbench/`。
 
@@ -63,12 +67,35 @@ noc-input-buffer/
 | 类型 | 路径 |
 |---|---|
 | testbench | `testbench/<top>.sv` |
-| Windows 运行脚本 | `scripts/run_<top>.ps1` |
+| Windows 运行脚本 | `scripts/simulation/run_<top>.ps1` |
 | Windows 仿真结果 | `vivado_sim_windows/<top>_sim/` |
-| WSL 运行脚本 | `scripts/run_<top>.sh` |
+| WSL 运行脚本 | `scripts/simulation/run_<top>.sh` |
 | WSL 仿真结果 | `vivado_sim_wsl/<top>_sim/` |
+| Windows 综合脚本 | `scripts/synthesis/run_<top>_synthesis.ps1` |
+| Windows 综合结果 | `vivado_synthesis_windows/<top>_synthesis/` |
 
-公共 PowerShell 脚本 `scripts/run_tb_mesh.ps1` 继续用于 Windows，并把结果写入 `vivado_sim_windows/`。WSL/Linux 使用独立 Bash 脚本和 `vivado_sim_wsl/`，避免覆盖 Windows 历史结果。
+公共 PowerShell 脚本 `scripts/simulation/run_tb_mesh.ps1` 继续用于 Windows，并把结果写入 `vivado_sim_windows/`。WSL/Linux 使用独立 Bash 脚本和 `vivado_sim_wsl/`，避免覆盖 Windows 历史结果。
+
+## 2026-07-29 脚本目录与综合规则
+
+- 原有仿真、编译检查和结果绘图脚本已统一移入 `scripts/simulation/`，脚本内部的仓库根目录计算已同步调整。
+- 已建立 `scripts/synthesis/`，用于后续 Windows Vivado 2019.2 综合脚本；本次未执行综合。
+- Windows Vivado 综合结果统一保存到 `vivado_synthesis_windows/<top>_synthesis/`。
+- 2026-07-29 已将 Linux 的 `scripts/` 镜像同步到 Windows 工作副本 `E:\Codex-Project\NoC-XY\scripts\`：Windows 旧的根目录平铺仿真脚本已移除，`simulation/` 和 `synthesis/` 目录结构及文件内容与 Linux 一致。
+
+## 2026-07-29 首次 Windows RTL 综合任务
+
+- 目标顶层：`mesh`；目标器件：`xcvu440-flga2892-2-e`。
+- 已使用 Windows Vivado 2019.2 和 `scripts/synthesis/run_mesh_synthesis.ps1` 完成综合，只读取 `src/` 中的 RTL，不加入 `testbench/`。
+- 结果目录：`vivado_synthesis_windows/mesh_synthesis/`（Windows 工作副本对应路径为 `E:\Codex-Project\NoC-XY\vivado_synthesis_windows\mesh_synthesis\`）；包含 `synthesis.log`、`utilization.rpt`、`timing_summary.rpt` 和 `mesh_synth.dcp`。
+- 实际命令：
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File E:\Codex-Project\NoC-XY\scripts\synthesis\run_mesh_synthesis.ps1
+```
+
+- `synth_design` 成功完成：`0 errors`、`0 critical warnings`。默认 2×3 `mesh` 使用 30,498 LUT（1.20%）、22,081 个寄存器（0.44%）、0 BRAM、0 DSP；顶层直接暴露 NoC 接口，报告中的 542 IOB（37.23%）不代表最终板级 I/O 方案。
+- 本次没有 `.xdc` 时钟/引脚约束，因此 `timing_summary.rpt` 只记录无约束路径，不能用于时序收敛结论；也没有生成 bitstream。综合警告主要提示结构体数组存储器未推断为 BRAM、而将实现为寄存器，后续板级设计时需要评估。
 
 ## 快速开始
 
@@ -233,19 +260,19 @@ E:\Vivado\Vivado\2019.2
 主要脚本：
 
 ```text
-scripts/run_tb_mesh.ps1
+scripts/simulation/run_tb_mesh.ps1
 ```
 
 命令格式：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh.ps1 -TbFile <tb文件名>.sv -Top <顶层模块名>
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh.ps1 -TbFile <tb文件名>.sv -Top <顶层模块名>
 ```
 
 运行注入率扫描 tb：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh.ps1 -TbFile tb_mesh_injection_sweep.sv -Top tb_mesh_injection_sweep
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh.ps1 -TbFile tb_mesh_injection_sweep.sv -Top tb_mesh_injection_sweep
 ```
 
 结果目录：
@@ -405,7 +432,8 @@ git commit -m "Save current NoC simulation state"
 - `kpi/` 默认不提交，因为它更像报告/材料目录，不属于当前 NoC 源码备份。<!-- Modify clarify kpi folder is excluded from code backup, Michael Tan, 20260626 -->
 - 当前已经初始化本地 Git 仓库，分支名是 `main`，第一次备份提交是 `8b2abe7 Initial NoC source backup`。<!-- Modify record completed local Git initialization, Michael Tan, 20260626 -->
 - 当前已经绑定 GitHub 远程仓库 `origin`：`https://github.com/tanmaoju-oss/noc-input-buffer.git`，本地 `main` 已跟踪 `origin/main`。<!-- Modify record GitHub remote binding, Michael Tan, 20260626 -->
-- `AGENTS.md` 和 `README.md` 后续只保留在本地，不再提交到 GitHub 远程仓库。<!-- Modify record local-only documentation policy, Michael Tan, 20260626 -->
+- `AGENTS.md` 和 `README.md` 需要随可复用项目状态变更提交并推送到 GitHub。<!-- Modify change documentation GitHub tracking policy, Michael Tan, 20260729 -->
+- 以后用户要求将变更 Git 提交并推送到远程仓库时，也要同步拉取到 Windows 目录 `E:\\Codex-Project\\NoC-XY`，并确认该工作副本已更新到对应提交。<!-- Modify add Git-to-Windows repository synchronization rule, Michael Tan, 20260729 -->
 - 如果本机没有配置 Git 用户名和邮箱，可以先在当前仓库内使用：
 
 ```powershell
@@ -424,7 +452,7 @@ git config user.email "tanma@local"
 计划使用的 Vivado 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5.ps1
 ```
 
 预期结果文件：
@@ -441,7 +469,7 @@ vivado_sim_windows/tb_mesh_injection_sweep_5x5_sim/injection_latency_results.txt
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5.sv
-scripts/run_tb_mesh_injection_sweep_5x5.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5.ps1
 ```
 
 修改内容：原来的 `testbench/tb_mesh_injection_sweep.sv` 保持 2x3 不变；新增 `tb_mesh_injection_sweep_5x5.sv`，top module 为 `tb_mesh_injection_sweep_5x5`，并新增专用仿真脚本，使结果进入独立的 `tb_mesh_injection_sweep_5x5_sim` 目录。
@@ -449,7 +477,7 @@ scripts/run_tb_mesh_injection_sweep_5x5.ps1
 Vivado 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5.ps1
 ```
 
 结果文件：
@@ -491,7 +519,7 @@ injection_rate_permille injection_rate attempted injected blocked received avg_l
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_style.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 目标统计方式：
@@ -505,7 +533,7 @@ drain 阶段：停止产生新 packet，把 measurement 阶段注入的 packet �
 计划仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 <!-- Modify record start of Noxim-style 5x5 sweep task, Michael Tan, 20260629 -->
@@ -516,7 +544,7 @@ powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_swe
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_style.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 已有的 2x3 tb 和普通 5x5 tb 没有修改。
@@ -540,7 +568,7 @@ drain 阶段停止产生新 packet，只用于等待 measurement 阶段注入的
 Vivado 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 结果文件：
@@ -584,7 +612,7 @@ injection_rate_permille injection_rate warmup_cycles measure_cycles drain_cycles
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 目标行为：
@@ -599,7 +627,7 @@ measurement packet 的 latency 从生成时间开始算，到 TAIL 到达结束�
 计划仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 <!-- Modify record start of queue-based Noxim-style 5x5 sweep task, Michael Tan, 20260701 -->
@@ -610,7 +638,7 @@ powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_swe
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 注意：本次没有修改 RTL 源设计文件，source queue 只写在 tb 的 traffic generator 里。
@@ -635,7 +663,7 @@ latency 从 packet 生成时间开始算，到 TAIL 到达结束。
 Vivado 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 结果文件：
@@ -680,7 +708,7 @@ injection_rate_permille injection_rate warmup_cycles measure_cycles drain_limit_
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 ```
 
 计划注入率：
@@ -697,7 +725,7 @@ scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 ```
 
 本次没有修改 RTL 源设计文件，也没有修改已有 queue 版 tb；是在 queue 版基础上新建一版，增加 0.1 之前的低注入率点。
@@ -705,7 +733,7 @@ scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 ```
 
 结果文件：
@@ -758,7 +786,7 @@ error_count == 0
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 ```
 
 计划注入率：
@@ -775,7 +803,7 @@ scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 ```
 
 本次没有修改 RTL 源设计文件，也没有修改已有 queue 版 tb；是在 0.10 到 0.30 附近增加更多注入率点，用来观察饱和拐点。
@@ -783,7 +811,7 @@ scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 ```
 
 结果文件：
@@ -848,7 +876,7 @@ HEAD + BODY + BODY + TAIL
 
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
 ```
 
 统计口径保持 packet latency：从 packet 生成时间开始，到 TAIL flit 到达目的节点结束。
@@ -949,13 +977,13 @@ packet = HEAD + BODY + BODY + TAIL
 
 ```text
 testbench/tb_mesh_injection_sweep_2x3_n4.sv
-scripts/run_tb_mesh_injection_sweep_2x3_n4.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 计划仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_2x3_n4.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 预期结果目录：
@@ -972,7 +1000,7 @@ vivado_sim_windows/tb_mesh_injection_sweep_2x3_n4_sim
 
 ```text
 testbench/tb_mesh_injection_sweep_2x3_n4.sv
-scripts/run_tb_mesh_injection_sweep_2x3_n4.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 关键行为：
@@ -987,7 +1015,7 @@ monitor 会检查 TAIL 前收到的 BODY 数量是否等于 PACKET_FLIT_NUM - 2�
 Vivado 仿真命令：
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_2x3_n4.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 结果目录：
@@ -1026,7 +1054,7 @@ packet_flit_num injection_rate_permille injection_rate attempted injected blocke
 新增文件：
 ```text
 testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
 ```
 
 packet 格式：
@@ -1043,7 +1071,7 @@ BODY flit 只检查目的节点是否正确，不单独统计延迟。
 
 仿真命令：
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
 ```
 
 结果目录：
@@ -1123,9 +1151,9 @@ rate latency_cycles injected received queue_full errors
 ## 2026-07-13 脚本与仿真结果分离
 
 - 顶层 PowerShell 脚本已从原 `vivado_sim/` 移到 `scripts/`。
-- `scripts/run_tb_mesh.ps1` 统一从 `src/` 和 `testbench/` 取文件，并将结果写入 `vivado_sim_windows/<top>_sim/`。
-- `scripts/run_design_compile.ps1` 从 `src/` 编译设计代码，并将结果写入 `vivado_sim_windows/design_compile/`。
-- 已为原先缺少专用入口的 6 个 tb 补充轻量级包装脚本；当前每个 `testbench/<top>.sv` 都有对应的 `scripts/run_<top>.ps1`。`tb_mesh` 直接使用公共脚本的默认参数。
+- `scripts/simulation/run_tb_mesh.ps1` 统一从 `src/` 和 `testbench/` 取文件，并将结果写入 `vivado_sim_windows/<top>_sim/`。
+- `scripts/simulation/run_design_compile.ps1` 从 `src/` 编译设计代码，并将结果写入 `vivado_sim_windows/design_compile/`。
+- 已为原先缺少专用入口的 6 个 tb 补充轻量级包装脚本；当前每个 `testbench/<top>.sv` 都有对应的 `scripts/simulation/run_<top>.ps1`。`tb_mesh` 直接使用公共脚本的默认参数。
 - 如果某个结果目录尚不存在，对应脚本会在第一次运行时创建 `vivado_sim_windows/<top>_sim/`。
 - 当前完成了静态路径检查，真实 Vivado 仿真仍待工具环境就绪后验证。
 
@@ -1148,7 +1176,7 @@ rate latency_cycles injected received queue_full errors
 
 本次任务计划：
 
-- 新增 Linux/Bash 入口 `scripts/run_tb_mesh.sh`。
+- 新增 Linux/Bash 入口 `scripts/simulation/run_tb_mesh.sh`。
 - 保留现有 Windows PowerShell 脚本不变。
 - 使用 Linux Vivado 2025.2 重新仿真现有 `testbench/tb_mesh.sv`。
 - 把可复用结果保存到 `vivado_sim_wsl/tb_mesh_sim/`。
@@ -1158,7 +1186,7 @@ rate latency_cycles injected received queue_full errors
 计划命令：
 
 ```bash
-bash scripts/run_tb_mesh.sh
+bash scripts/simulation/run_tb_mesh.sh
 ```
 
 <!-- Modify record start of first reproducible WSL/Linux tb_mesh simulation task, Michael Tan, 20260714 -->
@@ -1168,7 +1196,7 @@ bash scripts/run_tb_mesh.sh
 本次新增脚本：
 
 ```text
-scripts/run_tb_mesh.sh
+scripts/simulation/run_tb_mesh.sh
 ```
 
 运行环境：
@@ -1182,7 +1210,7 @@ Vivado 2025.2
 运行命令：
 
 ```bash
-bash scripts/run_tb_mesh.sh
+bash scripts/simulation/run_tb_mesh.sh
 ```
 
 脚本会从 `src/` 按固定顺序编译 RTL，从 `testbench/tb_mesh.sv` 读取顶层 tb，并把生成文件隔离到：
@@ -1223,7 +1251,7 @@ ERROR: unexpected exception when evaluating tcl command
 同一个快照在获准的沙箱外运行后立即通过，因此本环境中这个特定错误确认来自 Codex 命令沙箱，不是 RTL、许可证或缺库问题。以后由 Codex 执行仿真时，直接使用已批准的沙箱外命令：
 
 ```bash
-bash scripts/run_tb_mesh.sh
+bash scripts/simulation/run_tb_mesh.sh
 ```
 
 该命令的批准前缀已经保存。仿真完成后仍需检查结果目录中的日志和输出文件，不能只看终端返回。
@@ -1243,13 +1271,13 @@ testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv
 本次保持原 tb、RTL、PowerShell 脚本和 Windows 历史结果不变，新增：
 
 ```text
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 计划命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 WSL/Linux 独立结果目录：
@@ -1267,7 +1295,7 @@ vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/
 本次新增 Linux 脚本：
 
 ```text
-scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 原有 tb、`src/` 下 RTL、PowerShell 入口和 Windows 历史结果均未修改。
@@ -1275,7 +1303,7 @@ scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 运行命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 WSL/Linux 结果目录：
@@ -1353,13 +1381,13 @@ vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_
 新增可复用绘图脚本：
 
 ```text
-scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 ```
 
 运行命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 ```
 
 生成图片：
@@ -1383,7 +1411,7 @@ vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_
 生成命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 ```
 
 生成文件：
@@ -1396,12 +1424,12 @@ python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 
 ## 2026-07-15 四虚拟通道 RTL 任务开始
 
-本次任务把当前 NoC 从 2 个虚拟通道扩展为 4 个。修改前先检查 VC 编号宽度、输入缓冲、VC 分配器和交换分配器，不能只根据全局常量可参数化就直接判定正确。现有 tb 保持不变，新增独立简单测试 `testbench/tb_mesh_4vc_simple.sv`，明确测试 VC0、VC1、VC2、VC3；新增 WSL/Linux Vivado 2025.2 入口 `scripts/run_tb_mesh_4vc_simple.sh`，结果写入独立目录 `vivado_sim_wsl/tb_mesh_4vc_simple_sim/`。
+本次任务把当前 NoC 从 2 个虚拟通道扩展为 4 个。修改前先检查 VC 编号宽度、输入缓冲、VC 分配器和交换分配器，不能只根据全局常量可参数化就直接判定正确。现有 tb 保持不变，新增独立简单测试 `testbench/tb_mesh_4vc_simple.sv`，明确测试 VC0、VC1、VC2、VC3；新增 WSL/Linux Vivado 2025.2 入口 `scripts/simulation/run_tb_mesh_4vc_simple.sh`，结果写入独立目录 `vivado_sim_wsl/tb_mesh_4vc_simple_sim/`。
 
 计划命令：
 
 ```bash
-bash scripts/run_tb_mesh_4vc_simple.sh
+bash scripts/simulation/run_tb_mesh_4vc_simple.sh
 ```
 
 <!-- Modify record start of four-virtual-channel RTL and simple verification task, Michael Tan, 20260715 -->
@@ -1418,12 +1446,12 @@ RTL 已从 2 个 VC 扩展为 4 个 VC：
 新增文件：
 
 - `testbench/tb_mesh_4vc_simple.sv`
-- `scripts/run_tb_mesh_4vc_simple.sh`
+- `scripts/simulation/run_tb_mesh_4vc_simple.sh`
 
 运行命令：
 
 ```bash
-bash scripts/run_tb_mesh_4vc_simple.sh
+bash scripts/simulation/run_tb_mesh_4vc_simple.sh
 ```
 
 WSL/Linux 结果目录：
@@ -1455,14 +1483,14 @@ vc_num expected_flits received_flits head_seen tail_seen output_vc_seen error_co
 
 ## 2026-07-15 四 VC、5x5、4-flit queue-knee sweep 任务开始
 
-本次使用新的 4-VC RTL，复现昨天的 5x5、Noxim-style、源队列、4-flit、20 点 knee sweep 模式，但不直接复用原 tb 名称和结果目录。新增独立 tb：`testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`，新增 WSL 脚本：`scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`，结果保存到 `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`。
+本次使用新的 4-VC RTL，复现昨天的 5x5、Noxim-style、源队列、4-flit、20 点 knee sweep 模式，但不直接复用原 tb 名称和结果目录。新增独立 tb：`testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`，新增 WSL 脚本：`scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`，结果保存到 `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`。
 
 保持原实验的 20 个注入率、4-flit packet、源队列深度、warm-up、measurement 和 drain 设置不变，便于比较 2-VC 与 4-VC 结果。
 
 计划命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
 ```
 
 <!-- Modify record start of independent four-VC 5x5 4-flit queue-knee sweep, Michael Tan, 20260715 -->
@@ -1472,14 +1500,14 @@ bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
 新增独立文件：
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
 
 原来的 `tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit` tb 和结果目录没有被复用或覆盖。新 tb 会强制检查 `VC_NUM=4`、`VC_SIZE=2`，并保持原实验的 20 个注入率、4-flit packet、200-cycle warm-up、1000-cycle measurement、最多 8000-cycle drain 和 2048 深度源队列。
 
 运行命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
 ```
 
 独立结果目录：
@@ -1528,7 +1556,7 @@ rate latency_cycles injected received queue_full errors
 
 ## 2026-07-15 四 VC queue-knee 两张曲线图任务开始
 
-本次基于已经完成的 4-VC、5x5、4-flit queue-knee 结果表，生成和昨天 2-VC 图片风格及坐标范围一致的两张 PNG：完整范围图使用注入率 0.00～0.50、延迟 0～3000 cycles；knee 放大图使用注入率 0.00～0.16、延迟 0～500 cycles。新增独立绘图脚本 `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`，图片保存到 4-VC 独立结果目录。
+本次基于已经完成的 4-VC、5x5、4-flit queue-knee 结果表，生成和昨天 2-VC 图片风格及坐标范围一致的两张 PNG：完整范围图使用注入率 0.00～0.50、延迟 0～3000 cycles；knee 放大图使用注入率 0.00～0.16、延迟 0～500 cycles。新增独立绘图脚本 `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`，图片保存到 4-VC 独立结果目录。
 
 <!-- Modify record start of four-VC full and knee-zoom latency plots, Michael Tan, 20260715 -->
 
@@ -1536,12 +1564,12 @@ rate latency_cycles injected received queue_full errors
 
 新增可复用脚本：
 
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 生成命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 生成图片：
@@ -1565,12 +1593,12 @@ python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 
 修改脚本：
 
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 重新生成命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 更新图片：
@@ -1590,8 +1618,8 @@ python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 计划新增：
 
 - `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 <!-- Modify record start of independent four-VC throughput sweep and curve, Michael Tan, 20260715 -->
 
@@ -1600,16 +1628,16 @@ python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 新增文件：
 
 - `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 吞吐量定义：warm-up 200 cycles 后，在严格覆盖 1000 个完整接收采样沿的 measurement window 内，统计 25 个节点本地输出实际收到的全部 flit。归一化 flit throughput 为 `received_flits_window / (1000 * 25)`，单位是 `flit/cycle/node`；packet throughput 统计同一窗口内的 TAIL，单位是 `packet/cycle/node`。后续 drain 流量不进入 throughput，但仍用于验证全部 measurement packet 最终无丢失到达。
 
 命令：
 
 ```bash
-bash scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+bash scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 结果目录：
@@ -1661,12 +1689,12 @@ Vivado 仿真约运行 11 分 20 秒，在 464335 ns 结束，日志无 `ERROR:`
 计划新增：
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
 
 计划命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
 ```
 
 独立结果目录：
@@ -1680,8 +1708,8 @@ bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.
 新增文件：
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
 
 本实验没有修改 RTL。热点固定为中心节点 `(2,2)`，`HOTSPOT_PROBABILITY_PERMILLE=200`，即 `H=0.2`。非热点源节点有 20% 概率显式选择热点，剩余随机分支排除自身和热点；热点源节点随机选择其他节点。因此所有节点合计的理论热点 packet 占比为 `0.2 × 24/25 = 0.192`。结果文件额外记录每个注入率下的热点 packet 数量与实测占比。
 
@@ -1690,8 +1718,8 @@ bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.
 命令：
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
 ```
 
 结果目录：
@@ -1788,7 +1816,7 @@ DRAIN_CYCLES_PER_RATE=1000
 计划命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 <!-- Modify record start of packet-unit throughput curve task, Michael Tan, 20260724 -->
@@ -1797,12 +1825,12 @@ python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 
 修改了可复用绘图脚本：
 
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 生成命令：
 
 ```bash
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 新增图片：

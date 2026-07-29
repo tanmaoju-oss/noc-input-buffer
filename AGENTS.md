@@ -22,7 +22,8 @@ Repository path:
 - Linux Vivado 2025.2 is installed at `/home/tanma/tools/Xilinx/2025.2/Vivado`; load it with `source /home/tanma/tools/Xilinx/2025.2/Vivado/settings64.sh` before using `vivado`, `xvlog`, `xelab`, or `xsim`.
 - The required Ubuntu packages for xsim, including GCC/G++/Make and the Vivado Linux dependency set, are installed. A temporary `/tmp` smoke run of `tb_mesh` reached `[TB_MESH] PASSED` after xsim was allowed to run outside the Codex command sandbox.
 - Codex sandbox execution can cause xsim snapshot loading to fail with only `ERROR: unexpected exception when evaluating tcl command`. If `xvlog` and `xelab` succeed but this exact xsim load error appears, rerun the xsim/simulation command with approved escalated execution instead of treating it as an RTL or missing-library failure.
-- Existing `.ps1` files and the recorded `E:\Vivado\Vivado\2019.2` path belong to the former Windows workflow. Treat the PowerShell commands later in this file as historical run records unless the workflow has first been adapted and verified for the current environment.
+- Windows Vivado 2019.2 is installed at `E:\Vivado\Vivado\2019.2`. All future Vivado synthesis tasks must use this licensed Windows installation, invoked from Codex through `powershell.exe`; do not use the unlicensed Linux Vivado installation for synthesis.//Modify establish Windows Vivado synthesis rule, Michael Tan, 20260729
+- Existing `.ps1` simulation records later in this file belong to the former Windows workflow. Treat them as historical run records unless the workflow has first been adapted and verified for the current environment.
 - Do not report a simulation as verified in the new environment merely because old Windows-generated logs or result files exist. Record whether a result is historical or newly reproduced.
 - Before future simulation work, verify the Vivado 2025.2 path and use the matching Linux/Bash entry while keeping old Windows scripts for reproducibility.
 
@@ -34,32 +35,39 @@ The directory layout below is mandatory for all future work:
 noc-input-buffer/
 ├── src/          # SystemVerilog design/RTL files only
 ├── testbench/    # All SystemVerilog testbench files
-├── scripts/      # Vivado/automation entry scripts only
+├── scripts/
+│   ├── simulation/ # All existing simulation, compile-check, and plotting scripts
+│   └── synthesis/  # Windows Vivado synthesis scripts
 ├── vivado_sim_windows/ # Windows Vivado simulation outputs
-└── vivado_sim_wsl/     # WSL/Linux Vivado simulation outputs
+├── vivado_sim_wsl/     # WSL/Linux Vivado simulation outputs
+└── vivado_synthesis_windows/ # Windows Vivado synthesis outputs
 ```
 
 - Put synthesizable/design `.sv` files in `src/`. Do not place testbench files, scripts, logs, waveforms, or generated Vivado data there.
 - Put every testbench `.sv` file in the top-level `testbench/` directory. Do not recreate `src/tb/`, `test/tb/`, or another nested tb directory.
-- Put Vivado and automation entry scripts in top-level `scripts/`.
+- Put simulation, compile-check, and result-plotting scripts in `scripts/simulation/`. Put Windows Vivado synthesis scripts in `scripts/synthesis/`.
+- When the script layout changes in the Linux working copy, synchronize `scripts/` to the Windows working copy `E:\Codex-Project\NoC-XY\scripts\` before running Windows Vivado. On 2026-07-29, the Windows scripts were mirrored from Linux: obsolete root-level simulation scripts were removed, and `simulation/` plus `synthesis/` now match the Linux contents.//Modify record Windows script-layout synchronization, Michael Tan, 20260729
+- Put Windows Vivado synthesis outputs under `vivado_synthesis_windows/<top_module>_synthesis/`; do not write generated synthesis files into the repository root.
 - Give every testbench its own result directory under the platform-specific result root, normally `<result_root>/<top_module>_sim/`.
 - Keep a new testbench, its run script, and its result directory paired by the same descriptive top-module name. Do not reuse another testbench's output directory.
 - Never write generated simulation files into the repository root, `src/`, or `testbench/`.
 - Before running a simulation, inspect the entry script and confirm that its repository root, `src/`, `testbench/`, and output paths match this layout.
 - Use this naming contract for a top module named `<top>`:
   - tb: `testbench/<top>.sv`
-  - Windows entry: `scripts/run_<top>.ps1`
+  - Windows entry: `scripts/simulation/run_<top>.ps1`
   - Windows results: `vivado_sim_windows/<top>_sim/`
-  - WSL entry: `scripts/run_<top>.sh`
+  - WSL entry: `scripts/simulation/run_<top>.sh`
   - WSL results: `vivado_sim_wsl/<top>_sim/`
-- `scripts/run_tb_mesh.ps1` is the shared runner. It now resolves the repository root from `scripts/..`, design files from `src/`, tb files from `testbench/`, and default outputs from `vivado_sim_windows/`.
-- The PowerShell paths remain the Windows workflow. The first reusable WSL/Linux `tb_mesh` run was completed on 2026-07-14 through `scripts/run_tb_mesh.sh`, with results under `vivado_sim_wsl/tb_mesh_sim/`.
+- Windows synthesis entry: `scripts/synthesis/run_<top>_synthesis.ps1`
+- Windows synthesis results: `vivado_synthesis_windows/<top>_synthesis/`
+- `scripts/simulation/run_tb_mesh.ps1` is the shared runner. It now resolves the repository root from `scripts/simulation/../..`, design files from `src/`, tb files from `testbench/`, and default outputs from `vivado_sim_windows/`.
+- The PowerShell paths remain the Windows workflow. The first reusable WSL/Linux `tb_mesh` run was completed on 2026-07-14 through `scripts/simulation/run_tb_mesh.sh`, with results under `vivado_sim_wsl/tb_mesh_sim/`.
 
 ## Script/Layout Separation Completed 2026-07-13
 
 - Moved all top-level PowerShell entry scripts from the former `vivado_sim/` to `scripts/`.
 - Updated the shared scripts so sources resolve from `src/`, tb files from `testbench/`, and default outputs under `vivado_sim_windows/<top_module>_sim/`.
-- Added missing lightweight wrappers so every current file in `testbench/` has a matching `scripts/run_<top>.ps1` entry. The shared `scripts/run_tb_mesh.ps1` is both the generic runner and the entry for `tb_mesh` through its defaults.
+- Added missing lightweight wrappers so every current file in `testbench/` has a matching `scripts/simulation/run_<top>.ps1` entry. The shared `scripts/simulation/run_tb_mesh.ps1` is both the generic runner and the entry for `tb_mesh` through its defaults.
 - `vivado_sim_windows/` is now exclusively for generated or retained simulation results.
 
 ## Platform Result Split Completed 2026-07-13
@@ -76,6 +84,7 @@ noc-input-buffer/
 - After finishing any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` with changed files, run commands, result paths, and important simulation results.//Modify add mandatory post-task documentation rule, Michael Tan, 20260626
 - For every new simulation feature, create a new tb file and a corresponding simulation entry/result directory. Do not directly repurpose an existing tb such as the 2x3 baseline sweep.//Modify add new-tb-per-feature rule, Michael Tan, 20260629
 - Follow the canonical layout strictly: RTL in `src/`, tb files in `testbench/`, scripts in `scripts/`, Windows results in `vivado_sim_windows/`, and WSL/Linux results in `vivado_sim_wsl/`.
+- 当用户要求将变更 Git 提交并推送到远程仓库后，还必须将远程仓库同步拉取到 Windows 目录 `E:\\Codex-Project\\NoC-XY`；确认该目录中的工作副本已更新到对应提交。//Modify add Git-to-Windows repository synchronization rule, Michael Tan, 20260729
 - Every code modification must be marked near the changed code with:
 
 ```systemverilog
@@ -94,10 +103,11 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 
 ## Current State and Next Work
 
+- First Windows RTL synthesis completed 2026-07-29: `mesh` was synthesized for `xcvu440-flga2892-2-e` using licensed Windows Vivado 2019.2 and `scripts/synthesis/run_mesh_synthesis.ps1`, with no testbench files. Outputs are in `vivado_synthesis_windows/mesh_synthesis/` (also generated in the Windows worktree at `E:\Codex-Project\NoC-XY\vivado_synthesis_windows\mesh_synthesis\`): `synthesis.log`, `utilization.rpt`, `timing_summary.rpt`, and `mesh_synth.dcp`. `synth_design` completed with 0 errors and 0 critical warnings. The 2x3 default mesh used 30,498 LUTs (1.20%), 22,081 registers (0.44%), 0 BRAM, 0 DSP, and 542 IOBs (37.23%); IOB usage is not a board-ready result because `mesh` is an unwrapped RTL top. There is no `.xdc`, so timing is unconstrained and cannot be used for timing closure. Struct-array memories were mapped to registers, producing warnings that require later hardware-focused review.//Modify record completed first Windows RTL synthesis, Michael Tan, 20260729
 - The Noxim-like injection-rate/average-latency work has already expanded from the original 2x3 baseline to multiple 5x5 sweeps.
 - The latest completed experiment is the 4-flit, queue-based 5x5 knee sweep, now reproduced with Linux Vivado 2025.2 under WSL as recorded at the end of this file.
 - There is no pending code change implied solely by this document. Confirm the user's next requested experiment before modifying RTL or creating another tb.
-- The WSL/Linux Vivado 2025.2 baseline flow is now reproducible through `scripts/run_tb_mesh.sh`; the verified baseline output is under `vivado_sim_wsl/tb_mesh_sim/`. Historical Windows results remain useful reference data.
+- The WSL/Linux Vivado 2025.2 baseline flow is now reproducible through `scripts/simulation/run_tb_mesh.sh`; the verified baseline output is under `vivado_sim_wsl/tb_mesh_sim/`. Historical Windows results remain useful reference data.
 
 ## Current Important Files
 
@@ -107,9 +117,9 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - `src/circular_buffer_Xiugai3.sv`: contains the Vivado declaration-order fix.
 - `testbench/`: all testbench files.
 - `testbench/tb_mesh_injection_sweep.sv`: current injection-rate sweep testbench.
-- `scripts/run_tb_mesh.ps1`: main Vivado command-line simulation script.
-- `scripts/run_tb_mesh.sh`: verified WSL/Linux Vivado 2025.2 entry for the baseline `tb_mesh` simulation.
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`: verified WSL/Linux entry for the 20-point 4-flit 5x5 queue-knee sweep.
+- `scripts/simulation/run_tb_mesh.ps1`: main Vivado command-line simulation script.
+- `scripts/simulation/run_tb_mesh.sh`: verified WSL/Linux Vivado 2025.2 entry for the baseline `tb_mesh` simulation.
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`: verified WSL/Linux entry for the 20-point 4-flit 5x5 queue-knee sweep.
 - `AGENTS.md`: Codex-facing memory file.
 - `README.md`: Chinese user-facing project summary.
 
@@ -194,13 +204,13 @@ Vivado version/path used previously:
 Run command template:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh.ps1 -TbFile <tb_file>.sv -Top <top_module>
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh.ps1 -TbFile <tb_file>.sv -Top <top_module>
 ```
 
 Injection sweep command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh.ps1 -TbFile tb_mesh_injection_sweep.sv -Top tb_mesh_injection_sweep
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh.ps1 -TbFile tb_mesh_injection_sweep.sv -Top tb_mesh_injection_sweep
 ```
 
 Injection sweep output directory:
@@ -317,11 +327,11 @@ in `testbench/tb_mesh_injection_sweep.sv`, then rerun Vivado simulation.
 Goal:
 
 - Continue the Noxim-like injection-rate/average-latency sweep by creating a separate 5x5 sweep tb and keeping the original 2x3 sweep tb unchanged.
-- First target files: `testbench/tb_mesh_injection_sweep_5x5.sv` and `scripts/run_tb_mesh_injection_sweep_5x5.ps1`.
+- First target files: `testbench/tb_mesh_injection_sweep_5x5.sv` and `scripts/simulation/run_tb_mesh_injection_sweep_5x5.ps1`.
 - Planned simulation command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5.ps1
 ```
 
 Expected reusable output:
@@ -337,7 +347,7 @@ Date: 2026-06-29
 Changed files:
 
 - `testbench/tb_mesh_injection_sweep_5x5.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5.ps1`
 
 Change:
 
@@ -348,7 +358,7 @@ Change:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5.ps1
 ```
 
 Output files:
@@ -390,12 +400,12 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_style.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1`
 
 Planned command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 //Modify record start of Noxim-style 5x5 sweep task, Michael Tan, 20260629
@@ -407,7 +417,7 @@ Date: 2026-06-29
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_style.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_style.ps1`
 
 Key behavior:
 
@@ -420,7 +430,7 @@ Key behavior:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_style.ps1
 ```
 
 Output files:
@@ -464,12 +474,12 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1`
 
 Planned command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 //Modify record start of queue-based Noxim-style 5x5 sweep task, Michael Tan, 20260701
@@ -481,7 +491,7 @@ Date: 2026-07-01
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1`
 
 Generated files:
 
@@ -506,7 +516,7 @@ Key settings:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue.ps1
 ```
 
 Verified result:
@@ -543,7 +553,7 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
 
 Planned rates:
 
@@ -558,7 +568,7 @@ Date: 2026-07-09
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1`
 
 Generated files:
 
@@ -571,7 +581,7 @@ Generated files:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_lowrate.ps1
 ```
 
 Verified result:
@@ -615,7 +625,7 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
 
 Planned rates:
 
@@ -630,7 +640,7 @@ Date: 2026-07-09
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1`
 
 Generated files:
 
@@ -643,7 +653,7 @@ Generated files:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee.ps1
 ```
 
 Verified result:
@@ -694,7 +704,7 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
 
 //Modify record start of 4-flit queue-based Noxim-style 5x5 knee sweep task, Michael Tan, 20260709
 
@@ -714,12 +724,12 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_2x3_n4.sv`
-- `scripts/run_tb_mesh_injection_sweep_2x3_n4.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_2x3_n4.ps1`
 
 Planned command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_2x3_n4.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 Expected reusable output:
@@ -735,7 +745,7 @@ Date: 2026-07-01
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_2x3_n4.sv`
-- `scripts/run_tb_mesh_injection_sweep_2x3_n4.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_2x3_n4.ps1`
 
 Key behavior:
 
@@ -748,7 +758,7 @@ Key behavior:
 Vivado command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_2x3_n4.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_2x3_n4.ps1
 ```
 
 Output files:
@@ -796,7 +806,7 @@ Current Git setup notes:
 - Local Git repository has been initialized, current branch is `main`, and the first backup commit is `8b2abe7 Initial NoC source backup`.//Modify record completed local Git initialization, Michael Tan, 20260626
 - GitHub remote `origin` is bound to `https://github.com/tanmaoju-oss/noc-input-buffer.git`, and local `main` tracks `origin/main`.//Modify record GitHub remote binding, Michael Tan, 20260626
 - GitHub access from command-line Git may need the user's v2rayN proxy. The usual local proxy is `http://127.0.0.1:10808`; configure with `git config --global http.proxy http://127.0.0.1:10808` and `git config --global https.proxy http://127.0.0.1:10808` if `git push` cannot connect to `github.com:443`.//Modify record v2rayN proxy configuration for GitHub push/pull, Michael Tan, 20260713
-- `AGENTS.md` and `README.md` should be kept locally only and removed from GitHub remote tracking.//Modify record local-only documentation policy, Michael Tan, 20260626
+- `AGENTS.md` and `README.md` are tracked and must be pushed to GitHub with reusable project-state changes, as explicitly requested by the user.//Modify change documentation GitHub tracking policy, Michael Tan, 20260729
 - Initial local Git setup should use repository-local identity if global identity is not configured:
 
 ```powershell
@@ -904,7 +914,7 @@ User request:
 New files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1`
 
 Key tb behavior:
 
@@ -917,7 +927,7 @@ Key tb behavior:
 Simulation command:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulation\run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.ps1
 ```
 
 Result directory:
@@ -1002,7 +1012,7 @@ Conclusion:
 
 Goal:
 
-- Add the first Linux/Bash Vivado simulation entry at `scripts/run_tb_mesh.sh`.
+- Add the first Linux/Bash Vivado simulation entry at `scripts/simulation/run_tb_mesh.sh`.
 - Keep the existing Windows PowerShell workflow unchanged.
 - Compile, elaborate, and run the existing `testbench/tb_mesh.sv` with Linux Vivado 2025.2.
 - Save reusable WSL outputs under `vivado_sim_wsl/tb_mesh_sim/`.
@@ -1012,7 +1022,7 @@ Goal:
 Planned command:
 
 ```bash
-bash scripts/run_tb_mesh.sh
+bash scripts/simulation/run_tb_mesh.sh
 ```
 
 Expected outputs:
@@ -1028,7 +1038,7 @@ Expected outputs:
 
 Changed file:
 
-- `scripts/run_tb_mesh.sh`
+- `scripts/simulation/run_tb_mesh.sh`
 
 Environment:
 
@@ -1039,7 +1049,7 @@ Environment:
 Command:
 
 ```bash
-bash scripts/run_tb_mesh.sh
+bash scripts/simulation/run_tb_mesh.sh
 ```
 
 Result directory:
@@ -1073,7 +1083,7 @@ Codex execution rule for future simulations:
 
 - The earlier sandboxed xsim runs failed while loading a valid snapshot with `ERROR: unexpected exception when evaluating tcl command`.
 - Running the same snapshot outside the Codex command sandbox passed. This establishes the command sandbox as the cause of that specific failure in this environment.
-- Future Codex Vivado/xsim simulations must use an approved escalated command such as `bash scripts/run_tb_mesh.sh`. The approval prefix for this command was saved during this task.
+- Future Codex Vivado/xsim simulations must use an approved escalated command such as `bash scripts/simulation/run_tb_mesh.sh`. The approval prefix for this command was saved during this task.
 - Always inspect the generated result-directory logs and output files after the run; do not rely only on console output.
 
 No RTL or testbench file was modified for this environment/workflow task.
@@ -1086,7 +1096,7 @@ Goal:
 
 - Reproduce the previously Windows-verified `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv` experiment with Linux Vivado 2025.2 on WSL2.
 - Keep the existing tb, RTL, PowerShell entry, and Windows result directory unchanged.
-- Add `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
+- Add `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
 - Save Linux outputs under `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/`.
 - Run the script with approved escalated execution so xsim does not hit the confirmed Codex sandbox snapshot-loading failure.
 - Verify all 20 injection-rate rows, `measure_injected == measure_received`, `measure_queue_full == 0`, `error_count == 0`, and generated logs/result files.
@@ -1094,7 +1104,7 @@ Goal:
 Planned command:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 Expected key outputs:
@@ -1109,7 +1119,7 @@ Expected key outputs:
 
 Added file:
 
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`
 
 Unchanged files:
 
@@ -1120,7 +1130,7 @@ Unchanged files:
 Command:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
 ```
 
 WSL result directory:
@@ -1178,7 +1188,7 @@ Windows comparison note:
 
 Codex execution rule:
 
-- This long xsim run was executed outside the command sandbox using the approved prefix `bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
+- This long xsim run was executed outside the command sandbox using the approved prefix `bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
 - Reuse that approved command for future reruns, then validate the generated result table and logs.
 
 //Modify record completed Linux Vivado 2025.2 reproduction of 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714
@@ -1198,12 +1208,12 @@ Goal:
 
 Added reusable plotting script:
 
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py`
 
 Command:
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 ```
 
 Generated image:
@@ -1239,7 +1249,7 @@ Goal:
 Command:
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
 ```
 
 Generated image:
@@ -1271,12 +1281,12 @@ Planned files:
 
 - RTL under `src/` as required by the four-VC audit, beginning with `src/noc.sv`.
 - `testbench/tb_mesh_4vc_simple.sv`
-- `scripts/run_tb_mesh_4vc_simple.sh`
+- `scripts/simulation/run_tb_mesh_4vc_simple.sh`
 
 Planned command:
 
 ```bash
-bash scripts/run_tb_mesh_4vc_simple.sh
+bash scripts/simulation/run_tb_mesh_4vc_simple.sh
 ```
 
 Expected result directory:
@@ -1295,7 +1305,7 @@ Changed RTL:
 Added verification files:
 
 - `testbench/tb_mesh_4vc_simple.sv`
-- `scripts/run_tb_mesh_4vc_simple.sh`
+- `scripts/simulation/run_tb_mesh_4vc_simple.sh`
 
 Audit conclusion:
 
@@ -1306,7 +1316,7 @@ Audit conclusion:
 Vivado command:
 
 ```bash
-bash scripts/run_tb_mesh_4vc_simple.sh
+bash scripts/simulation/run_tb_mesh_4vc_simple.sh
 ```
 
 Result directory:
@@ -1346,14 +1356,14 @@ Goal:
 - Run the previous 5x5 Noxim-style queue-based 4-flit knee sweep with the new four-VC RTL.
 - Do not reuse or overwrite the previous tb name or its WSL result directory.
 - Create a separate tb named `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`.
-- Add `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh` and save results under the matching independent WSL directory.
+- Add `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh` and save results under the matching independent WSL directory.
 - Keep the same 20 injection-rate points, 4-flit packet format, queue depth, warm-up, measurement, and drain settings for comparison with the earlier run.
 - Verify all rows, packet accounting invariants, queue-full/error counts, and generated Vivado logs.
 
 Planned command:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
 ```
 
 Expected result directory:
@@ -1367,7 +1377,7 @@ Expected result directory:
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
 
 Isolation and configuration:
 
@@ -1378,7 +1388,7 @@ Isolation and configuration:
 Command:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
 ```
 
 Result directory:
@@ -1439,7 +1449,7 @@ Goal:
 
 Planned script:
 
-`scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+`scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 //Modify record start of four-VC full and knee-zoom latency plots, Michael Tan, 20260715
 
@@ -1447,12 +1457,12 @@ Planned script:
 
 Added reusable script:
 
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 Command:
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 Generated images:
@@ -1485,12 +1495,12 @@ Goal:
 
 Changed script:
 
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 Command:
 
 ```bash
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 Updated image:
@@ -1523,8 +1533,8 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 //Modify record start of independent four-VC throughput sweep and curve, Michael Tan, 20260715
 
@@ -1533,8 +1543,8 @@ Planned files:
 Added files:
 
 - `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
-- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 Measurement definition:
 
@@ -1546,8 +1556,8 @@ Measurement definition:
 Commands:
 
 ```bash
-bash scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+bash scripts/simulation/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 Result directory:
@@ -1607,12 +1617,12 @@ Goal:
 Planned files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
 
 Planned command:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
 ```
 
 Expected result directory:
@@ -1626,8 +1636,8 @@ Expected result directory:
 Added files:
 
 - `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
-- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
-- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
+- `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
 
 Traffic and measurement definition:
 
@@ -1640,8 +1650,8 @@ Traffic and measurement definition:
 Commands:
 
 ```bash
-bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
-python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
+bash scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+python3 scripts/simulation/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
 ```
 
 Result directory:
@@ -1749,7 +1759,7 @@ Goal:
 Planned command:
 
 ```bash
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 //Modify record start of packet-unit throughput curve task, Michael Tan, 20260724
@@ -1758,7 +1768,7 @@ python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 
 Changed file:
 
-- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+- `scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
 
 Generated file:
 
@@ -1767,7 +1777,7 @@ Generated file:
 Command:
 
 ```bash
-python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
 ```
 
 Result:
