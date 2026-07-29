@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-"""Plot the WSL four-VC 4-flit 5x5 queue-knee injection/throughput result."""
+"""Plot the WSL four-VC 4-flit 5x5 queue-knee injection/latency result."""
 
-# Modify add dependency-light Graphviz four-VC fixed-window throughput curve, Michael Tan, 20260715
+# Modify add dependency-light Graphviz latency plots for four-VC WSL results, Michael Tan, 20260715
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ import tempfile
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
-TOP = "tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc"
+REPO_ROOT = SCRIPT_DIR.parent.parent  # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
+TOP = "tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc"
 RESULT_DIR = REPO_ROOT / "vivado_sim_wsl" / f"{TOP}_sim"
-RESULT_FILE = RESULT_DIR / "throughput_results.txt"
-OUTPUT_FILE = RESULT_DIR / "throughput_curve.png"  # Modify use the independent throughput output name, Michael Tan, 20260715
-PACKET_OUTPUT_FILE = RESULT_DIR / "throughput_curve_packet.png"  # Modify add packet-unit throughput output without replacing the flit-unit curve, Michael Tan, 20260724
+RESULT_FILE = RESULT_DIR / "injection_latency_results.txt"
+FULL_OUTPUT_FILE = RESULT_DIR / "injection_latency_curve_full.png"
+ZOOM_OUTPUT_FILE = RESULT_DIR / "injection_latency_curve_knee_zoom.png"
 
 CANVAS_WIDTH_PT = 792.0
 CANVAS_HEIGHT_PT = 518.4
@@ -27,7 +27,7 @@ PLOT_BOTTOM = 66.0
 PLOT_TOP = 476.0
 
 
-def load_points(throughput_column: int) -> list[tuple[float, float]]:  # Modify select the recorded flit or packet throughput column, Michael Tan, 20260724
+def load_points() -> list[tuple[float, float]]:
     lines = RESULT_FILE.read_text(encoding="utf-8").splitlines()
     points: list[tuple[float, float]] = []
     for line in lines[1:]:
@@ -35,8 +35,8 @@ def load_points(throughput_column: int) -> list[tuple[float, float]]:  # Modify 
         if not fields:
             continue
         injection_rate = float(fields[1])
-        delivered_throughput = int(fields[throughput_column]) / 1_000_000.0
-        points.append((injection_rate, delivered_throughput))  # Modify reuse the fixed-window normalized throughput selected by unit, Michael Tan, 20260724
+        latency_cycles = int(fields[12]) / 1000.0
+        points.append((injection_rate, latency_cycles))
 
     if len(points) != 20:
         raise RuntimeError(f"expected 20 data points, found {len(points)}")
@@ -47,8 +47,8 @@ def x_position(rate: float, x_max: float) -> float:
     return PLOT_LEFT + (rate / x_max) * (PLOT_RIGHT - PLOT_LEFT)
 
 
-def y_position(throughput: float, y_max: float) -> float:
-    return PLOT_BOTTOM + (throughput / y_max) * (PLOT_TOP - PLOT_BOTTOM)
+def y_position(latency: float, y_max: float) -> float:
+    return PLOT_BOTTOM + (latency / y_max) * (PLOT_TOP - PLOT_BOTTOM)
 
 
 def build_dot(
@@ -58,13 +58,9 @@ def build_dot(
     y_max: float,
     x_divisions: int,
     y_divisions: int,
-    y_axis_label: str,  # Modify support explicit flit-unit and packet-unit y-axis labels, Michael Tan, 20260724
-    y_tick_decimals: int,  # Modify keep 0.02 packet-throughput ticks distinct, Michael Tan, 20260724
-    y_axis_label_x: float,
-    y_axis_label_y: float,  # Modify allow the packet-unit label to avoid the denser tick labels, Michael Tan, 20260724
 ) -> str:
     dot: list[str] = [
-        "graph throughput_curve {",
+        "graph latency_curve {",
         '  graph [layout=neato, overlap=true, splines=line, outputorder=edgesfirst, '
         'bgcolor="white", margin=0, pad=0, size="11,7.2!", ratio=fill, dpi=100];',
         '  node [fontname="DejaVu Sans", color="#333333"];',
@@ -75,7 +71,7 @@ def build_dot(
 
     for index in range(y_divisions + 1):
         tick_value = index * y_max / y_divisions
-        tick_label = f"{tick_value:.{y_tick_decimals}f}"  # Modify format ticks according to the selected throughput scale, Michael Tan, 20260724
+        tick_label = int(tick_value + 0.5)
         y = y_position(tick_value, y_max)
         dot.append(
             f'  ygrid_l_{index} [pos="{PLOT_LEFT},{y}!", shape=point, width=0.01, style=invis];'
@@ -119,14 +115,14 @@ def build_dot(
             'fontname="DejaVu Sans Bold", fontsize=17];',
             f'  x_axis_label [pos="{(PLOT_LEFT + PLOT_RIGHT) / 2},18!", shape=plaintext, '
             'label="Injection rate (packet/cycle/node)", fontsize=13];',
-            f'  y_axis_label [pos="{y_axis_label_x},{y_axis_label_y}!", shape=plaintext, '
-            f'label="{y_axis_label}", fontsize=11];',  # Modify label each curve with its actual throughput unit, Michael Tan, 20260724
+            f'  y_axis_label [pos="19,{(PLOT_BOTTOM + PLOT_TOP) / 2}!", shape=plaintext, '
+            'label="Average packet\\nlatency (cycles)", fontsize=11];',
         ]
     )
 
-    for index, (rate, throughput) in enumerate(points):
+    for index, (rate, latency) in enumerate(points):
         dot.append(
-            f'  point_{index} [pos="{x_position(rate, x_max)},{y_position(throughput, y_max)}!", '
+            f'  point_{index} [pos="{x_position(rate, x_max)},{y_position(latency, y_max)}!", '
             'shape=circle, fixedsize=true, width=0.075, height=0.075, label="", '
             'color="#2166c2", fillcolor="#2166c2", style=filled, penwidth=0.8];'
         )
@@ -147,24 +143,9 @@ def render_plot(
     y_max: float,
     x_divisions: int,
     y_divisions: int,
-    y_axis_label: str,  # Modify pass the selected throughput unit into the plot, Michael Tan, 20260724
-    y_tick_decimals: int,  # Modify pass unit-appropriate y-axis precision, Michael Tan, 20260724
-    y_axis_label_x: float,
-    y_axis_label_y: float,  # Modify pass the selected y-axis label position, Michael Tan, 20260724
 ) -> None:
-    dot_text = build_dot(
-        points,
-        title,
-        x_max,
-        y_max,
-        x_divisions,
-        y_divisions,
-        y_axis_label,
-        y_tick_decimals,
-        y_axis_label_x,
-        y_axis_label_y,
-    )  # Modify render either flit-unit or packet-unit throughput, Michael Tan, 20260724
-    # Modify render normalized throughput with fixed decimal tick spacing, Michael Tan, 20260715
+    dot_text = build_dot(points, title, x_max, y_max, x_divisions, y_divisions)
+    # Modify support clean task-specific tick spacing for the wider four-VC knee view, Michael Tan, 20260715
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".dot", encoding="utf-8", dir=RESULT_DIR, delete=False
     ) as dot_file:
@@ -183,37 +164,31 @@ def render_plot(
 
 
 def main() -> None:
-    flit_points = load_points(14)  # Modify read normalized flit throughput from the verified result table, Michael Tan, 20260724
-    packet_points = load_points(15)  # Modify read normalized packet throughput from the verified result table, Michael Tan, 20260724
+    points = load_points()
+    zoom_points = [point for point in points if point[0] <= 0.24]
+    if len(zoom_points) != 13:
+        raise RuntimeError(f"expected 13 zoom data points, found {len(zoom_points)}")
+    # Modify extend the four-VC zoom through the full steep-rise region, Michael Tan, 20260715
 
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     render_plot(
-        flit_points,
-        OUTPUT_FILE,
-        "5x5 Delivered Throughput, Packet = 4 Flits, 4 VCs (WSL Vivado 2025.2)",
+        points,
+        FULL_OUTPUT_FILE,
+        "5x5 Queue Knee, Packet = 4 Flits, 4 VCs (WSL Vivado 2025.2)",
         0.5,
-        0.6,
-        10,
-        6,
-        "Delivered throughput\\n(flit/cycle/node)",
-        1,
-        19,
-        (PLOT_BOTTOM + PLOT_TOP) / 2,
-        # Modify show linear growth followed by the delivered-throughput plateau, Michael Tan, 20260715
-    )
-    render_plot(
-        packet_points,
-        PACKET_OUTPUT_FILE,
-        "5x5 Packet Throughput, Packet = 4 Flits, 4 VCs (WSL Vivado 2025.2)",
-        0.5,
-        0.16,
+        3000.0,
         10,
         8,
-        "Delivered packet throughput (packet/cycle/node)",
-        2,
-        PLOT_LEFT + 125,
-        PLOT_TOP - 18,
-        # Modify align both axes to packet/cycle/node and place the unit label clear of dense y ticks, Michael Tan, 20260724
+    )
+    render_plot(
+        zoom_points,
+        ZOOM_OUTPUT_FILE,
+        "5x5 Queue Knee Zoom, Packet = 4 Flits, 4 VCs (WSL Vivado 2025.2)",
+        0.24,
+        700.0,
+        6,
+        7,
+        # Modify show the four-VC knee with 0.04-rate and 100-cycle ticks, Michael Tan, 20260715
     )
 
 

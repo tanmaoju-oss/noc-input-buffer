@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Modify add WSL/Linux Vivado 2025.2 runner for the simple four-VC test, Michael Tan, 20260715
+# Modify add WSL/Linux Vivado 2025.2 entry for the 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)" # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 SOURCE_DIR="${REPO_ROOT}/src"
 TB_DIR="${REPO_ROOT}/testbench"
-SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/tb_mesh_4vc_simple_sim"
+TOP="tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit"
+SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/${TOP}_sim"
 VIVADO_ROOT="${VIVADO_ROOT:-/home/tanma/tools/Xilinx/2025.2/Vivado}"
-TOP="tb_mesh_4vc_simple"
 
 SETTINGS_FILE="${VIVADO_ROOT}/settings64.sh"
 if [[ ! -f "${SETTINGS_FILE}" ]]; then
@@ -60,7 +60,7 @@ done
 
 mkdir -p "${SIM_DIR}"
 
-# Modify keep generated four-VC simulation data isolated and reproducible, Michael Tan, 20260715
+# Modify isolate and clean only this WSL sweep result directory for reproducible reruns, Michael Tan, 20260714
 rm -rf -- "${SIM_DIR}/xsim.dir"
 rm -f -- \
     "${SIM_DIR}/xvlog.log" \
@@ -70,7 +70,7 @@ rm -f -- \
     "${SIM_DIR}/xsim.log" \
     "${SIM_DIR}/xsim.jou" \
     "${SIM_DIR}/out.vcd" \
-    "${SIM_DIR}/tb_mesh_4vc_simple_results.txt" \
+    "${SIM_DIR}/injection_latency_results.txt" \
     "${SIM_DIR}/${TOP}_sim.wdb"
 
 pushd "${SIM_DIR}" >/dev/null
@@ -89,13 +89,8 @@ xelab --debug typical --relax --mt 2 \
 echo "Running ${TOP}."
 xsim "${TOP}_sim" --runall --log xsim.log
 
-# Modify reject xsim runs that finish without the testbench PASS marker, Michael Tan, 20260715
-if ! grep -Fq "[TB_MESH_4VC] PASSED" xsim.log; then
-    echo "ERROR: ${TOP} did not report PASS; inspect ${SIM_DIR}/xsim.log" >&2
-    exit 1
-fi
-
 echo "${TOP} simulation completed."
 echo "Result directory: ${SIM_DIR}"
+echo "Statistics: ${SIM_DIR}/injection_latency_results.txt"
 echo "Log: ${SIM_DIR}/xsim.log"
-echo "Result: ${SIM_DIR}/tb_mesh_4vc_simple_results.txt"
+echo "VCD: ${SIM_DIR}/out.vcd"

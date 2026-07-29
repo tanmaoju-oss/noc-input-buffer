@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $ScriptDir "..")).Path # Modify resolve repository root from top-level scripts directory, Michael Tan, 20260713
+$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $ScriptDir "../..")).Path # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 $SourceDir = Join-Path $RepoRoot "src" # Modify use top-level RTL source directory, Michael Tan, 20260713
 $TbDir = Join-Path $RepoRoot "testbench" # Modify use top-level testbench directory, Michael Tan, 20260713
 $SimRoot = Join-Path $RepoRoot "vivado_sim_windows" # Modify route PowerShell/Windows Vivado results to the Windows-specific root, Michael Tan, 20260713

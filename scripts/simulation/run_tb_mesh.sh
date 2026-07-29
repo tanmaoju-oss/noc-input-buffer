@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Modify add WSL/Linux Vivado 2025.2 entry for the 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714
+# Modify add reproducible WSL/Linux Vivado 2025.2 tb_mesh runner, Michael Tan, 20260714
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)" # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 SOURCE_DIR="${REPO_ROOT}/src"
 TB_DIR="${REPO_ROOT}/testbench"
-TOP="tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit"
-SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/${TOP}_sim"
+SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/tb_mesh_sim"
 VIVADO_ROOT="${VIVADO_ROOT:-/home/tanma/tools/Xilinx/2025.2/Vivado}"
+TOP="tb_mesh"
 
 SETTINGS_FILE="${VIVADO_ROOT}/settings64.sh"
 if [[ ! -f "${SETTINGS_FILE}" ]]; then
@@ -60,7 +60,7 @@ done
 
 mkdir -p "${SIM_DIR}"
 
-# Modify isolate and clean only this WSL sweep result directory for reproducible reruns, Michael Tan, 20260714
+# Modify keep generated files isolated in the WSL result directory and make reruns reproducible, Michael Tan, 20260714
 rm -rf -- "${SIM_DIR}/xsim.dir"
 rm -f -- \
     "${SIM_DIR}/xvlog.log" \
@@ -70,7 +70,6 @@ rm -f -- \
     "${SIM_DIR}/xsim.log" \
     "${SIM_DIR}/xsim.jou" \
     "${SIM_DIR}/out.vcd" \
-    "${SIM_DIR}/injection_latency_results.txt" \
     "${SIM_DIR}/${TOP}_sim.wdb"
 
 pushd "${SIM_DIR}" >/dev/null
@@ -91,6 +90,5 @@ xsim "${TOP}_sim" --runall --log xsim.log
 
 echo "${TOP} simulation completed."
 echo "Result directory: ${SIM_DIR}"
-echo "Statistics: ${SIM_DIR}/injection_latency_results.txt"
 echo "Log: ${SIM_DIR}/xsim.log"
 echo "VCD: ${SIM_DIR}/out.vcd"

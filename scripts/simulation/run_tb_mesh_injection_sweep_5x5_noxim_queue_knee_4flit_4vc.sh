@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)" # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 SOURCE_DIR="${REPO_ROOT}/src"
 TB_DIR="${REPO_ROOT}/testbench"
 TOP="tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc"

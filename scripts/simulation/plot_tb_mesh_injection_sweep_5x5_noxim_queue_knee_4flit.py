@@ -12,7 +12,7 @@ import tempfile
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+REPO_ROOT = SCRIPT_DIR.parent.parent  # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 TOP = "tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit"
 RESULT_DIR = REPO_ROOT / "vivado_sim_wsl" / f"{TOP}_sim"
 RESULT_FILE = RESULT_DIR / "injection_latency_results.txt"

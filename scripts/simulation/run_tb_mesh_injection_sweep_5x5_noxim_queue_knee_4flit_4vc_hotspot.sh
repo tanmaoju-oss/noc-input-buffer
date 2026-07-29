@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-# Modify add independent WSL/Linux Vivado 2025.2 entry for the four-VC 4-flit 5x5 throughput sweep, Michael Tan, 20260715
+# Modify add independent WSL/Linux Vivado 2025.2 entry for the four-VC center-hotspot latency sweep, Michael Tan, 20260722
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)" # Modify adjust repository root after scripts/simulation layout, Michael Tan, 20260729
 SOURCE_DIR="${REPO_ROOT}/src"
 TB_DIR="${REPO_ROOT}/testbench"
-TOP="tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc"
+TOP="tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot"
 SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/${TOP}_sim"
 VIVADO_ROOT="${VIVADO_ROOT:-/home/tanma/tools/Xilinx/2025.2/Vivado}"
 
@@ -70,7 +70,7 @@ rm -f -- \
     "${SIM_DIR}/xsim.log" \
     "${SIM_DIR}/xsim.jou" \
     "${SIM_DIR}/out.vcd" \
-    "${SIM_DIR}/throughput_results.txt" \
+    "${SIM_DIR}/injection_latency_results.txt" \
     "${SIM_DIR}/${TOP}_sim.wdb"
 
 pushd "${SIM_DIR}" >/dev/null
@@ -90,22 +90,27 @@ echo "Running ${TOP}."
 xsim "${TOP}_sim" --runall --log xsim.log
 
 # Modify require a complete 20-row result table before reporting sweep completion, Michael Tan, 20260715
-if [[ ! -f throughput_results.txt ]]; then
-    echo "ERROR: Missing throughput_results.txt" >&2
+if [[ ! -f injection_latency_results.txt ]]; then
+    echo "ERROR: Missing injection_latency_results.txt" >&2
     exit 1
 fi
-if [[ "$(awk 'NR > 1 {count++} END {print count+0}' throughput_results.txt)" -ne 20 ]]; then
+if [[ "$(awk 'NR > 1 {count++} END {print count+0}' injection_latency_results.txt)" -ne 20 ]]; then
     echo "ERROR: Expected 20 completed injection-rate rows" >&2
     exit 1
 fi
-if ! awk 'NR == 1 {next} ($11 != $12) || ($10 != 0) || ($19 != 0) {exit 1}' throughput_results.txt; then
+if ! awk 'NR == 1 {next} ($10 != $11) || ($9 != 0) || ($14 != 0) {exit 1}' injection_latency_results.txt; then
     echo "ERROR: A result row has packet loss, queue overflow, or a testbench error" >&2
     exit 1
 fi
-# Modify validate throughput-result packet accounting invariants on every rerun, Michael Tan, 20260715
+# Modify validate four-VC packet accounting invariants on every rerun, Michael Tan, 20260715
+if ! awk 'NR == 1 {next} ($15 != 2) || ($16 != 2) || ($17 != 200) || ($18 < 0) || ($18 > $7) || ($19 < 0) || ($19 > 1000000) {exit 1}' injection_latency_results.txt; then
+    echo "ERROR: A result row has invalid hotspot configuration or traffic-share statistics" >&2
+    exit 1
+fi
+# Modify validate center-hotspot settings and realized packet counters on every rerun, Michael Tan, 20260722
 
 echo "${TOP} simulation completed."
 echo "Result directory: ${SIM_DIR}"
-echo "Statistics: ${SIM_DIR}/throughput_results.txt"
+echo "Statistics: ${SIM_DIR}/injection_latency_results.txt"
 echo "Log: ${SIM_DIR}/xsim.log"
 echo "VCD: ${SIM_DIR}/out.vcd"
