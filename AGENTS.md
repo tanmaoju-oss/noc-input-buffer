@@ -48,6 +48,7 @@ noc-input-buffer/
 - Put simulation, compile-check, and result-plotting scripts in `scripts/simulation/`. Put Windows Vivado synthesis scripts in `scripts/synthesis/`.
 - When the script layout changes in the Linux working copy, synchronize `scripts/` to the Windows working copy `E:\Codex-Project\NoC-XY\scripts\` before running Windows Vivado. On 2026-07-29, the Windows scripts were mirrored from Linux: obsolete root-level simulation scripts were removed, and `simulation/` plus `synthesis/` now match the Linux contents.//Modify record Windows script-layout synchronization, Michael Tan, 20260729
 - Put Windows Vivado synthesis outputs under `vivado_synthesis_windows/<top_module>_synthesis/`; do not write generated synthesis files into the repository root.
+- After a Windows Vivado synthesis run, copy reusable text results such as `.log`, `.rpt`, `.tcl`, and `.jou` to the Linux working copy when needed, but do not copy `.dcp` checkpoint files from Windows to Linux. Keep `.dcp` only in the Windows result directory to avoid unnecessary duplicate storage.//Modify exclude Windows DCP files from Linux result synchronization, Michael Tan, 20260729
 - Give every testbench its own result directory under the platform-specific result root, normally `<result_root>/<top_module>_sim/`.
 - Keep a new testbench, its run script, and its result directory paired by the same descriptive top-module name. Do not reuse another testbench's output directory.
 - Never write generated simulation files into the repository root, `src/`, or `testbench/`.

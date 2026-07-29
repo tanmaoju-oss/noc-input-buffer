@@ -59,6 +59,7 @@ noc-input-buffer/
 - 仿真、编译检查和结果绘图脚本统一放在 `scripts/simulation/`；Windows Vivado 综合脚本统一放在 `scripts/synthesis/`。
 - 每个 tb 使用独立结果目录：Windows 结果放 `vivado_sim_windows/<顶层模块名>_sim/`，WSL/Linux 结果放 `vivado_sim_wsl/<顶层模块名>_sim/`。
 - Windows Vivado 综合结果放在 `vivado_synthesis_windows/<顶层模块名>_synthesis/`，与仿真结果分开保存。
+- Windows Vivado 综合完成后，可将 `.log`、`.rpt`、`.tcl`、`.jou` 等可复用结果同步到 Linux 工作副本；`.dcp` checkpoint 文件只保留在 Windows 结果目录，不再复制到 Linux，避免重复占用磁盘空间。
 - 新增实验时，tb、运行脚本和结果目录应使用一致的描述性名称，不能复用其他 tb 的结果目录。
 - 仿真生成物不能散落到项目根目录、`src/` 或 `testbench/`。
 
