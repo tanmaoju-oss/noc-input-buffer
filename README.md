@@ -27,12 +27,14 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 当前已确认：
 
 - Git 可以在 WSL 中使用。
-- 可以调用 Windows PowerShell，但当前 Linux 环境中没有发现 `vivado`、`xvlog`、`xelab` 或 `xsim` 命令。
+- Linux Vivado 2025.2 已安装在 `/home/tanma/tools/Xilinx/2025.2/Vivado`。使用前执行 `source /home/tanma/tools/Xilinx/2025.2/Vivado/settings64.sh`，即可调用 `vivado`、`xvlog`、`xelab` 和 `xsim`。
+- Ubuntu 下的 GCC、G++、Make 和 Vivado/xsim 依赖已经安装。临时 `/tmp` 冒烟测试中，现有 `tb_mesh` 已输出 `[TB_MESH] PASSED`。
+- Codex 命令沙箱会让 xsim 在加载快照时出现 `ERROR: unexpected exception when evaluating tcl command`；同一快照在获准的沙箱外执行后可正常仿真。因此以后由 Codex 运行 xsim 时，应直接使用获准的 escalated execution，避免把沙箱限制误判成 RTL 或缺库错误。
 - 仓库里的 `.ps1` 脚本以及 `E:\Vivado\Vivado\2019.2` 是原 Windows 环境留下的仿真入口和工具路径。
 - 本文后面保存的大量 PowerShell 命令与仿真结果属于历史记录；在 WSL 中重新验证脚本以前，不应理解为可以直接运行。
 - 已有 `xsim.log`、波形和结果文件是迁移过来的历史产物，不代表已经在新 Linux 环境重新仿真。
 
-如果以后在 WSL/Linux 中安装 Vivado，建议为现有流程增加 Bash 脚本，并保留 `.ps1` 脚本作为 Windows 复现入口。
+当前已增加并验证 WSL/Linux Bash 入口 `scripts/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
 
 ## 标准目录结构
 
@@ -63,10 +65,10 @@ noc-input-buffer/
 | testbench | `testbench/<top>.sv` |
 | Windows 运行脚本 | `scripts/run_<top>.ps1` |
 | Windows 仿真结果 | `vivado_sim_windows/<top>_sim/` |
-| 未来 WSL 运行脚本 | `scripts/run_<top>.sh` |
+| WSL 运行脚本 | `scripts/run_<top>.sh` |
 | WSL 仿真结果 | `vivado_sim_wsl/<top>_sim/` |
 
-公共脚本 `scripts/run_tb_mesh.ps1` 已改为从 `src/` 读取设计文件、从 `testbench/` 读取 tb，并把默认结果写入 `vivado_sim_windows/`。目前只完成了路径和脚本静态检查；由于当前 WSL 的 Linux `PATH` 中没有 Vivado/xsim，尚未在新环境完成真实仿真。
+公共 PowerShell 脚本 `scripts/run_tb_mesh.ps1` 继续用于 Windows，并把结果写入 `vivado_sim_windows/`。WSL/Linux 使用独立 Bash 脚本和 `vivado_sim_wsl/`，避免覆盖 Windows 历史结果。
 
 ## 快速开始
 
@@ -81,9 +83,9 @@ git status --short
 
 - `src/`：只存放当前 NoC SystemVerilog 设计/RTL 代码。
 - `testbench/`：各个独立测试场景的 testbench。
-- `scripts/`：Windows PowerShell 仿真入口和环境设置脚本。
+- `scripts/`：Windows PowerShell 仿真入口、WSL/Linux Bash 入口和环境设置脚本。
 - `vivado_sim_windows/`：迁移来的 Windows 历史结果，以及以后由 PowerShell/Windows Vivado 生成的结果。
-- `vivado_sim_wsl/`：以后由 WSL/Linux Vivado 生成的结果；当前通过 `.gitkeep` 保留空目录。
+- `vivado_sim_wsl/`：WSL/Linux Vivado 仿真结果；当前已包含通过验证的 `tb_mesh_sim/` 基础结果。
 - `project_*`：迁移过来的 Vivado 工程目录。
 - `buffer/`：早期 input buffer 相关代码和分析材料；当前工作区内该目录已有删除项，处理前先看 Git 状态。
 - `kpi/`：报告与绩效材料，不是当前 NoC RTL 主线。
@@ -143,7 +145,7 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 
 项目用于研究和验证 NoC input buffer、连续 packet 传输以及注入率—平均延迟关系。最初的 2x3、0.1～0.5 注入率扫描已经完成，后续又完成了多组 5x5、Noxim-style、源队列、低注入率、拐点加密采样以及 4-flit packet 实验。
 
-当前最新完成项是 4-flit、queue-based 的 5x5 knee sweep。项目目前没有仅由文档自动推导出的“待修改任务”；下一次应根据你的具体目标选择已有 tb，或者新建独立 tb 和结果目录。
+当前最新完成项是 4-flit、queue-based 的 5x5 knee sweep，并已在 WSL/Linux Vivado 2025.2 下重新跑通。项目目前没有仅由文档自动推导出的“待修改任务”；下一次应根据你的具体目标选择已有 tb，或者新建独立 tb 和结果目录。
 
 ## 已完成内容
 
@@ -1141,3 +1143,676 @@ rate latency_cycles injected received queue_full errors
 - 本次清理没有修改有效 RTL、testbench 或仿真结果。
 
 <!-- Modify record removal of obsolete buffer directory and Markdown synchronization, Michael Tan, 20260713 -->
+
+## 2026-07-14 首次可复现 WSL tb_mesh 仿真任务开始
+
+本次任务计划：
+
+- 新增 Linux/Bash 入口 `scripts/run_tb_mesh.sh`。
+- 保留现有 Windows PowerShell 脚本不变。
+- 使用 Linux Vivado 2025.2 重新仿真现有 `testbench/tb_mesh.sv`。
+- 把可复用结果保存到 `vivado_sim_wsl/tb_mesh_sim/`。
+- Codex 执行 xsim 时使用获准的沙箱外运行方式，避免再次遇到由命令沙箱导致的 `unexpected exception` 假失败。
+- 仿真后检查 `xvlog.log`、`xelab.log`、`xsim.log` 和 `out.vcd`，再把结果同步到两份 Markdown。
+
+计划命令：
+
+```bash
+bash scripts/run_tb_mesh.sh
+```
+
+<!-- Modify record start of first reproducible WSL/Linux tb_mesh simulation task, Michael Tan, 20260714 -->
+
+## 2026-07-14 首次可复现 WSL tb_mesh 仿真完成
+
+本次新增脚本：
+
+```text
+scripts/run_tb_mesh.sh
+```
+
+运行环境：
+
+```text
+WSL2 / Ubuntu 24.04
+Vivado 2025.2
+/home/tanma/tools/Xilinx/2025.2/Vivado
+```
+
+运行命令：
+
+```bash
+bash scripts/run_tb_mesh.sh
+```
+
+脚本会从 `src/` 按固定顺序编译 RTL，从 `testbench/tb_mesh.sv` 读取顶层 tb，并把生成文件隔离到：
+
+```text
+vivado_sim_wsl/tb_mesh_sim/
+```
+
+主要结果文件：
+
+```text
+vivado_sim_wsl/tb_mesh_sim/xvlog.log
+vivado_sim_wsl/tb_mesh_sim/xelab.log
+vivado_sim_wsl/tb_mesh_sim/xsim.log
+vivado_sim_wsl/tb_mesh_sim/out.vcd
+vivado_sim_wsl/tb_mesh_sim/tb_mesh_sim.wdb
+```
+
+验证结果：
+
+```text
+[TB_MESH] output flit 0 at (1,2): label=0 vc=0 time=96000
+[TB_MESH] output flit 1 at (1,2): label=2 vc=0 time=106000
+[TB_MESH] PASSED
+$finish called at time : 135 ns
+```
+
+`out.vcd` 大小为 391352 bytes。检查 `xvlog.log`、`xelab.log` 和 `xsim.log` 后，未发现 `ERROR:`、`CRITICAL WARNING`、`$error` 或 `FAILED`。当前仍有 `mesh.sv` generate/array interface connection、部分模块缺少 timescale，以及 `LIBRARY_PATH` 的既有 warning，但没有影响本次测试通过。
+
+### Codex 沙箱注意事项
+
+此前所有依赖已经安装、`xvlog` 和 `xelab` 均成功时，沙箱内 xsim 仍会在加载快照时报告：
+
+```text
+ERROR: unexpected exception when evaluating tcl command
+```
+
+同一个快照在获准的沙箱外运行后立即通过，因此本环境中这个特定错误确认来自 Codex 命令沙箱，不是 RTL、许可证或缺库问题。以后由 Codex 执行仿真时，直接使用已批准的沙箱外命令：
+
+```bash
+bash scripts/run_tb_mesh.sh
+```
+
+该命令的批准前缀已经保存。仿真完成后仍需检查结果目录中的日志和输出文件，不能只看终端返回。
+
+本次没有修改 RTL 或 testbench。
+
+<!-- Modify record verified WSL Vivado 2025.2 tb_mesh result and sandbox execution rule, Michael Tan, 20260714 -->
+
+## 2026-07-14 WSL 重新运行 4-flit 5x5 queue-knee sweep 任务开始
+
+本次目标是把此前只在 Windows Vivado 下完成的下面这个实验，在当前 WSL/Linux Vivado 2025.2 环境重新跑通：
+
+```text
+testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv
+```
+
+本次保持原 tb、RTL、PowerShell 脚本和 Windows 历史结果不变，新增：
+
+```text
+scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+计划命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+WSL/Linux 独立结果目录：
+
+```text
+vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/
+```
+
+完成后需要验证 20 个注入率点全部输出，并检查 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。Codex 运行脚本时继续使用已确认有效的沙箱外执行方式。
+
+<!-- Modify record start of WSL reproduction for 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714 -->
+
+## 2026-07-14 WSL 4-flit 5x5 queue-knee sweep 完成
+
+本次新增 Linux 脚本：
+
+```text
+scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+原有 tb、`src/` 下 RTL、PowerShell 入口和 Windows 历史结果均未修改。
+
+运行命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+WSL/Linux 结果目录：
+
+```text
+vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/
+```
+
+主要结果文件：
+
+```text
+injection_latency_results.txt
+xvlog.log
+xelab.log
+xsim.log
+out.vcd
+tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim.wdb
+```
+
+Linux Vivado 2025.2 结果：
+
+```text
+rate latency_cycles injected received queue_full errors
+0.010 11.953 235 235 0 0
+0.030 12.921 739 739 0 0
+0.050 14.762 1248 1248 0 0
+0.070 18.578 1744 1744 0 0
+0.090 37.283 2303 2303 0 0
+0.100 61.024 2545 2545 0 0
+0.120 176.726 3014 3014 0 0
+0.140 316.597 3593 3593 0 0
+0.160 412.535 4020 4020 0 0
+0.180 551.897 4462 4462 0 0
+0.200 712.666 5029 5029 0 0
+0.220 856.253 5572 5572 0 0
+0.240 987.239 6132 6132 0 0
+0.260 1079.501 6453 6453 0 0
+0.280 1293.909 6975 6975 0 0
+0.300 1405.161 7499 7499 0 0
+0.350 1846.494 8946 8946 0 0
+0.400 2139.670 10089 10089 0 0
+0.450 2558.392 11288 11288 0 0
+0.500 2876.995 12530 12530 0 0
+```
+
+验证结论：
+
+- 20 个注入率点全部完成，结果文件共有 1 行表头和 20 行数据。
+- 自动逐行校验得到 `data_rows=20`、`bad_rows=0`。
+- 每一点均满足 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。
+- 仿真在 586175 ns 正常 `$finish`；xsim 显示运行约 11 分 31 秒，峰值内存约 1450 MB。
+- `out.vcd` 大小为 2154609075 bytes，整个结果目录约 2.1 GB。
+- 三个日志未发现 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`；已有 interface、timescale 和 `LIBRARY_PATH` warning 没有影响仿真通过。
+
+### 与 Windows 2019.2 结果的区别
+
+同一个 tb 和 seed 在 Linux Vivado 2025.2 下得到的具体 packet 数量与延迟数值和 Windows Vivado 2019.2 历史结果不完全相同。较可能的原因是 Vivado 版本或平台不同导致 SystemVerilog `$urandom` 随机序列实现存在差异。两次结果的关键验收条件一致：没有丢包、没有源队列满、没有错误，而且 4-flit 延迟曲线的拐点和高负载增长趋势一致。
+
+该 Linux 脚本的沙箱外执行批准前缀已经保存，以后 Codex 可直接复用命令重新仿真，并在完成后检查结果表和日志。
+
+<!-- Modify record completed Linux Vivado 2025.2 reproduction of 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714 -->
+
+## 2026-07-14 WSL 4-flit queue-knee 延迟曲线绘图任务开始
+
+本次将使用刚生成的 WSL/Linux `injection_latency_results.txt` 绘制完整曲线：横坐标为 packet 注入率，纵坐标为平均 packet latency（cycles）。图片将参照 Windows 版的蓝色折线、圆点和网格样式，保存为：
+
+```text
+vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_full.png
+```
+
+<!-- Modify record start of WSL 4-flit queue-knee latency plot task, Michael Tan, 20260714 -->
+
+## 2026-07-14 WSL 4-flit queue-knee 延迟曲线完成
+
+新增可复用绘图脚本：
+
+```text
+scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+```
+
+运行命令：
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+```
+
+生成图片：
+
+```text
+vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_full.png
+```
+
+图片横坐标为 `Injection rate (packet/cycle/node)`，纵坐标为 `Average packet latency (cycles)`，包含 WSL 结果表中的全部 20 个点。样式参照 Windows 版，使用蓝色折线、圆点和灰色网格。
+
+图片尺寸为 1100×719，文件大小为 47828 bytes。绘图脚本使用系统已有的 Graphviz `neato` 和 Python 标准库，不依赖 matplotlib。目视检查确认曲线低负载区域较平缓，约在 0.10 后进入拐点区域，高负载延迟持续上升。
+
+<!-- Modify record generated and verified WSL 4-flit injection-latency curve, Michael Tan, 20260714 -->
+
+## 2026-07-14 WSL 4-flit queue-knee 前 0.16 放大图任务开始
+
+本次扩展现有绘图脚本，增加和 Windows 版对应的 `injection_latency_curve_knee_zoom.png`：横坐标范围 0～0.16，纵坐标范围 0～500 cycles，显示 WSL 结果中 0.01～0.16 的 9 个点，同时保留完整曲线的生成。
+
+## 2026-07-14 WSL 4-flit queue-knee 前 0.16 放大图完成
+
+生成命令：
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+```
+
+生成文件：
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_knee_zoom.png`
+
+图像横坐标为注入率 0.00～0.16，纵坐标为平均延迟 0～500 cycles，包含 Linux/WSL 仿真的 9 个点：0.01、0.03、0.05、0.07、0.09、0.10、0.12、0.14、0.16。图像为 1100 x 719 的 RGB PNG，大小 45,412 字节。已目视检查，坐标范围、蓝色折线与圆点、网格样式均与 Windows 版拐点放大图对应，并清楚显示 0.10 之后的延迟拐点。同一绘图脚本现在会同时重新生成全范围图和前 0.16 注入率放大图。
+
+<!-- Modify record completed WSL 4-flit queue-knee zoom plot, Michael Tan, 20260714 -->
+
+## 2026-07-15 四虚拟通道 RTL 任务开始
+
+本次任务把当前 NoC 从 2 个虚拟通道扩展为 4 个。修改前先检查 VC 编号宽度、输入缓冲、VC 分配器和交换分配器，不能只根据全局常量可参数化就直接判定正确。现有 tb 保持不变，新增独立简单测试 `testbench/tb_mesh_4vc_simple.sv`，明确测试 VC0、VC1、VC2、VC3；新增 WSL/Linux Vivado 2025.2 入口 `scripts/run_tb_mesh_4vc_simple.sh`，结果写入独立目录 `vivado_sim_wsl/tb_mesh_4vc_simple_sim/`。
+
+计划命令：
+
+```bash
+bash scripts/run_tb_mesh_4vc_simple.sh
+```
+
+<!-- Modify record start of four-virtual-channel RTL and simple verification task, Michael Tan, 20260715 -->
+
+## 2026-07-15 四虚拟通道 RTL 与简单测试完成
+
+RTL 已从 2 个 VC 扩展为 4 个 VC：
+
+- `src/noc.sv`：全局 `VC_NUM` 从 2 改为 4，`VC_SIZE = $clog2(VC_NUM)` 自动变成 2 bit。
+- `src/separable_input_first_allocator.sv`：模块独立使用时的默认 `VC_NUM` 同步从 2 改为 4；路由器内部实例本来就会显式传入全局值。
+
+检查确认，当前有效数据通路中的输入 buffer 数量、VC 编号宽度、流控向量、VC allocator、switch allocator 和 round-robin 仲裁循环都由 `VC_NUM`/`VC_SIZE` 推导，没有发现仍固定为 2 VC 的有效 RTL 路径。
+
+新增文件：
+
+- `testbench/tb_mesh_4vc_simple.sv`
+- `scripts/run_tb_mesh_4vc_simple.sh`
+
+运行命令：
+
+```bash
+bash scripts/run_tb_mesh_4vc_simple.sh
+```
+
+WSL/Linux 结果目录：
+
+`vivado_sim_wsl/tb_mesh_4vc_simple_sim/`
+
+结果表：
+
+```text
+vc_num expected_flits received_flits head_seen tail_seen output_vc_seen error_count
+4 8 8 1111 1111 0011 0
+```
+
+这个简单 tb 先连续向输入 VC0、VC1、VC2、VC3 各注入一个 HEAD，再注入各自的 TAIL，因此同一测试中四个源 VC 都实际保存并发送了 packet。目的节点正确收到 4 个 packet、共 8 个 flit，packet ID 与 HEAD/TAIL 顺序正确，`head_seen=1111`、`tail_seen=1111`、`error_count=0`，xsim 在 245 ns 输出 `[TB_MESH_4VC] PASSED`。
+
+`output_vc_seen=0011` 不是缺少 VC2/VC3：flit 每经过一跳都会重新分配下游 VC，本次负载只需要下游 VC0/VC1；是否测试了四个源 VC 由四组 packet ID 的完整 HEAD/TAIL 结果确认。
+
+已检查 `xvlog.log`、`xelab.log`、`xsim.log` 和结果表，没有 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`。既有 interface、timescale 和 `LIBRARY_PATH` warning 仍然存在但不影响通过。脚本还增加了 PASS 标记检查，避免 xsim 即使遇到 SystemVerilog `$fatal` 仍返回进程状态 0 而产生假通过。
+
+关键输出：
+
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/tb_mesh_4vc_simple_results.txt`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xvlog.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xelab.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xsim.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/out.vcd`
+
+<!-- Modify record completed four-virtual-channel RTL and simple Vivado verification, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC、5x5、4-flit queue-knee sweep 任务开始
+
+本次使用新的 4-VC RTL，复现昨天的 5x5、Noxim-style、源队列、4-flit、20 点 knee sweep 模式，但不直接复用原 tb 名称和结果目录。新增独立 tb：`testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`，新增 WSL 脚本：`scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`，结果保存到 `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`。
+
+保持原实验的 20 个注入率、4-flit packet、源队列深度、warm-up、measurement 和 drain 设置不变，便于比较 2-VC 与 4-VC 结果。
+
+计划命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+```
+
+<!-- Modify record start of independent four-VC 5x5 4-flit queue-knee sweep, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC、5x5、4-flit queue-knee sweep 完成
+
+新增独立文件：
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+
+原来的 `tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit` tb 和结果目录没有被复用或覆盖。新 tb 会强制检查 `VC_NUM=4`、`VC_SIZE=2`，并保持原实验的 20 个注入率、4-flit packet、200-cycle warm-up、1000-cycle measurement、最多 8000-cycle drain 和 2048 深度源队列。
+
+运行命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+```
+
+独立结果目录：
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`
+
+Vivado 2025.2 结果：
+
+```text
+rate latency_cycles injected received queue_full errors
+0.010 11.948 235 235 0 0
+0.030 12.820 739 739 0 0
+0.050 14.400 1248 1248 0 0
+0.070 16.378 1744 1744 0 0
+0.090 19.817 2303 2303 0 0
+0.100 22.565 2545 2545 0 0
+0.120 35.714 3014 3014 0 0
+0.140 84.153 3593 3593 0 0
+0.160 153.643 4020 4020 0 0
+0.180 268.786 4462 4462 0 0
+0.200 391.048 5029 5029 0 0
+0.220 474.048 5572 5572 0 0
+0.240 571.510 6132 6132 0 0
+0.260 645.762 6453 6453 0 0
+0.280 794.567 6975 6975 0 0
+0.300 887.461 7499 7499 0 0
+0.350 1223.836 8946 8946 0 0
+0.400 1418.524 10089 10089 0 0
+0.450 1704.706 11288 11288 0 0
+0.500 1913.803 12530 12530 0 0
+```
+
+全部 20 行均完成，自动检查为 `data_rows=20`、`bad_rows=0`。所有注入率都满足 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。三个 Vivado 日志中没有 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`。仿真结束时间为 464335 ns，实际运行约 11 分 31 秒，峰值进程内存约 1450 MB；`out.vcd` 大小为 2604935407 bytes。
+
+与昨天同平台的旧 2-VC WSL 结果相比，本次随机流量计数完全一致，可以直接观察 VC 数量变化。注入率 0.10、0.20、0.50 的平均延迟分别从 61.024、712.666、2876.995 cycles 降至 22.565、391.048、1913.803 cycles。4 VC 在高负载下仍会饱和，但拐点更晚，采样范围内的拥塞排队延迟明显降低。
+
+关键输出：
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_results.txt`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/xvlog.log`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/xelab.log`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/xsim.log`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/out.vcd`
+
+<!-- Modify record completed independent four-VC 5x5 4-flit queue-knee Vivado sweep, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC queue-knee 两张曲线图任务开始
+
+本次基于已经完成的 4-VC、5x5、4-flit queue-knee 结果表，生成和昨天 2-VC 图片风格及坐标范围一致的两张 PNG：完整范围图使用注入率 0.00～0.50、延迟 0～3000 cycles；knee 放大图使用注入率 0.00～0.16、延迟 0～500 cycles。新增独立绘图脚本 `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`，图片保存到 4-VC 独立结果目录。
+
+<!-- Modify record start of four-VC full and knee-zoom latency plots, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC queue-knee 两张曲线图完成
+
+新增可复用脚本：
+
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+生成命令：
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+生成图片：
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_full.png`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_knee_zoom.png`
+
+完整图包含全部 20 个数据点，坐标范围与 2-VC 完整图一致：注入率 0.00～0.50、延迟 0～3000 cycles。放大图包含 0.01～0.16 的 9 个数据点，坐标范围与 2-VC 放大图一致：注入率 0.00～0.16、延迟 0～500 cycles。
+
+两张图都是 1100×719 的 RGB PNG；完整图大小 45852 bytes，放大图大小 40185 bytes。已目视检查，4-VC 标题、蓝色折线与圆点、网格和坐标范围正确，没有裁切或数据越界，并能看到相对于 2 VC 更晚出现的延迟拐点。
+
+<!-- Modify record completed four-VC full and knee-zoom latency plots, Michael Tan, 20260715 -->
+
+## 2026-07-15 调整四 VC knee 放大图范围
+
+原来的 0.00～0.16 范围沿用了 2-VC 图，但在 4 VC 下只显示到快速上升的起点。现将 4-VC knee 放大图改为注入率 0.00～0.24、延迟 0～700 cycles，包含截至 0.24/571.510 cycles 的 13 个实测点；横轴采用 0.04 间隔，纵轴采用 100-cycle 间隔。只替换 4-VC 的 `injection_latency_curve_knee_zoom.png`，完整图和 2-VC 图片保持不变。
+
+<!-- Modify record start of improved four-VC knee zoom range, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC knee 放大图范围调整完成
+
+修改脚本：
+
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+重新生成命令：
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+更新图片：
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_knee_zoom.png`
+
+最终采用注入率 0.00～0.24、延迟 0～700 cycles；横轴刻度间隔 0.04，纵轴刻度间隔 100 cycles。图片包含从 0.01 到 0.24 的 13 个实测点，现在完整显示了 0.16～0.24 区间从 153.643 cycles 快速上升到 571.510 cycles 的趋势。
+
+图片为 1100×719 RGB PNG，大小 44257 bytes。目视检查确认坐标清晰、顶部余量合理、没有裁切，低负载平坦区、拐点和陡峭上升区都能同时看到。同一命令仍会重新生成范围保持为 0.00～0.50/0～3000 的完整曲线图。
+
+<!-- Modify record completed improved four-VC knee zoom range, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC throughput sweep 任务开始
+
+新增一套独立的 4-VC、5x5、4-flit、源队列吞吐量实验，保留现有延迟 tb 和结果不变。吞吐量在 warm-up 后固定 1000-cycle measurement window 内统计目的端实际收到的 flit 和完成的 packet，并分别归一化为 `flit/cycle/node` 与 `packet/cycle/node`。measurement 后仍会 drain 以验证无丢包，但 drain 流量不计入吞吐量。继续扫描 0.01～0.50 的相同 20 个 offered packet rate，并生成预期在饱和后形成平台的 throughput 曲线。
+
+计划新增：
+
+- `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+<!-- Modify record start of independent four-VC throughput sweep and curve, Michael Tan, 20260715 -->
+
+## 2026-07-15 四 VC throughput sweep 与曲线完成
+
+新增文件：
+
+- `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+吞吐量定义：warm-up 200 cycles 后，在严格覆盖 1000 个完整接收采样沿的 measurement window 内，统计 25 个节点本地输出实际收到的全部 flit。归一化 flit throughput 为 `received_flits_window / (1000 * 25)`，单位是 `flit/cycle/node`；packet throughput 统计同一窗口内的 TAIL，单位是 `packet/cycle/node`。后续 drain 流量不进入 throughput，但仍用于验证全部 measurement packet 最终无丢失到达。
+
+命令：
+
+```bash
+bash scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+结果目录：
+
+`vivado_sim_wsl/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`
+
+关键结果：
+
+```text
+packet_rate flit_throughput packet_throughput
+0.010 0.03772 0.00940
+0.030 0.11836 0.02964
+0.050 0.19900 0.04956
+0.070 0.27900 0.06968
+0.090 0.36696 0.09184
+0.100 0.40676 0.10168
+0.120 0.47488 0.11872
+0.140 0.53252 0.13296
+0.160 0.54460 0.13628
+0.180 0.52464 0.13100
+0.200 0.52144 0.13004
+0.220 0.54492 0.13624
+0.240 0.53748 0.13432
+0.260 0.54424 0.13596
+0.280 0.54220 0.13540
+0.300 0.54016 0.13520
+0.350 0.52584 0.13140
+0.400 0.54940 0.13732
+0.450 0.54016 0.13508
+0.500 0.54052 0.13532
+```
+
+全部 20 行完成，检查结果为 `data_rows=20`、`bad_rows=0`；每行均满足 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。低负载时 throughput 随 offered load 近似线性增加，约在 packet rate 0.14～0.16 后进入平台。0.16～0.50 的 12 个点中，flit throughput 平均值为 0.537967，最小 0.521440，最大 0.549400 flit/cycle/node；小幅波动来自 1000-cycle 有限窗口和随机流量。
+
+Vivado 仿真约运行 11 分 20 秒，在 464335 ns 结束，日志无 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`。生成的 `throughput_curve.png` 包含全部 20 个点，为 1100×719 RGB PNG，大小 47974 bytes；目视检查确认曲线呈现教材预期的“低负载线性增长—饱和后水平平台”。`out.vcd` 大小为 2605528334 bytes。
+
+本实验沿用现有生成器从本地 VC0 注入的行为；网络内部仍使用 4-VC 进行下游 VC 分配。
+
+<!-- Modify record completed four-VC fixed-window throughput sweep and saturation curve, Michael Tan, 20260715 -->
+
+<!-- Modify record start of WSL 4-flit queue-knee zoom plot task, Michael Tan, 20260714 -->
+
+## 2026-07-22 四 VC 中心热点延迟实验开始
+
+新增一套独立的 5x5、4-flit、4VC、源队列热点流量延迟扫描，不修改现有均匀随机延迟/吞吐量实验和 RTL。热点固定为中心节点 `(2,2)`，热点概率为 `H = 0.2`：每个非热点源节点生成 packet 时，有 20% 概率选择 `(2,2)`，其余 80% 均匀随机选择非自身且非热点的目的节点，避免随机分支再次命中热点而抬高真实热点概率；热点节点自身始终选择其他节点。
+
+实验保留随机基准的 20 个注入率、packet 长度、源队列深度、warm-up、measurement、seed 和四 VC 检查，以便直接比较。由于单一热点的 4-flit 本地输出在高负载下需要更长排空时间，热点实验采用独立的 16000-cycle drain 上限。
+
+计划新增：
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+
+计划命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+```
+
+独立结果目录：
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot_sim/`
+
+<!-- Modify record start of four-VC center-hotspot latency sweep, Michael Tan, 20260722 -->
+
+## 2026-07-22 四 VC 中心热点延迟实验完成
+
+新增文件：
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
+
+本实验没有修改 RTL。热点固定为中心节点 `(2,2)`，`HOTSPOT_PROBABILITY_PERMILLE=200`，即 `H=0.2`。非热点源节点有 20% 概率显式选择热点，剩余随机分支排除自身和热点；热点源节点随机选择其他节点。因此所有节点合计的理论热点 packet 占比为 `0.2 × 24/25 = 0.192`。结果文件额外记录每个注入率下的热点 packet 数量与实测占比。
+
+其他主要配置与四 VC 随机基准一致：5x5、4-flit、20 个注入率点、200-cycle warm-up、1000-cycle measurement、2048 深度源队列和相同 seed。考虑单热点 4-flit 本地输出的高负载排空需求，drain 上限使用 16000 cycles。
+
+命令：
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
+```
+
+结果目录：
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot_sim/`
+
+关键结果：
+
+```text
+packet_rate avg_latency_cycles
+0.010 12.137
+0.030 13.324
+0.050 19.243
+0.070 181.573
+0.090 385.141
+0.100 569.483
+0.120 886.364
+0.140 1057.084
+0.160 1335.380
+0.180 1585.764
+0.200 1769.841
+0.220 2114.957
+0.240 2345.978
+0.260 2401.783
+0.280 2974.747
+0.300 3159.688
+0.350 3943.168
+0.400 4332.622
+0.450 5093.534
+0.500 5672.454
+```
+
+20 行全部完成，每行均满足 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。共生成 104102 个 measurement packets，其中 19811 个发往热点，实测总体热点占比为 0.190304，与理论 0.192 接近。
+
+热点曲线在 0.01～0.05 仍接近低负载区，但从 0.07 开始快速上升；相比之下，已有四 VC 均匀随机曲线约在 0.12～0.16 才进入明显拐点。0.50 点实际 drain 为 10661 cycles，低于 16000 上限，12460 个 measurement packets 全部到达。
+
+Linux Vivado 2025.2 xsim 在 1026495 ns 结束，约运行 9 分 38 秒；`xvlog.log`、`xelab.log`、`xsim.log` 未发现 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`。
+
+生成文件包括：
+
+- `injection_latency_results.txt`
+- `injection_latency_curve_full.png`
+- `injection_latency_curve_knee_zoom.png`
+- `xvlog.log`、`xelab.log`、`xsim.log`
+- `out.vcd`
+
+两张曲线图均为 1100×719 RGB PNG。完整图范围为注入率 0.00～0.50、延迟 0～6000 cycles；拐点放大图范围为注入率 0.00～0.12、延迟 0～1000 cycles。已目视检查，数据没有裁切，热点导致的提前拐点显示清楚。
+
+<!-- Modify record completed four-VC center-hotspot latency sweep and plots, Michael Tan, 20260722 -->
+
+## 2026-07-23 packet ID + flit index 编码任务开始
+
+本次只修改 `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`，不修改 RTL 和其他实验。BODY/TAIL 的 `bt_pl` 将同时编码 `packet_id` 与 `flit_index`，接收端解码后逐 flit 检查编号，从而明确发现重复、丢失或乱序的 BODY/TAIL。HEAD 的目的地址和现有 packet 延迟、统计口径保持不变。
+
+计划使用 Linux Vivado 2025.2 在临时目录完成编译与 elaboration，不覆盖已有的完整 sweep 结果。
+
+<!-- Modify record start of packet-id plus flit-index payload encoding task, Michael Tan, 20260723 -->
+
+## 2026-07-23 packet ID + flit index 编码完成
+
+已修改：
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `AGENTS.md`
+- `README.md`
+
+当前 4-flit packet 的编码定义如下：
+
+- `FLIT_INDEX_SIZE = $clog2(PACKET_FLIT_NUM) = 2`。
+- HEAD 保持原路由字段，并在 `head_pl` 保存 16-bit packet ID。
+- BODY/TAIL 的 `bt_pl[1:0]` 保存 `flit_index`，随后 16 bit 保存 `packet_id`，其余高位清零。
+- 四个 flit 的 index 依次是 HEAD=0、BODY=1、BODY=2、TAIL=3。
+
+接收端新增每个 packet 的期望 flit index 状态。现在会分别解码 BODY/TAIL 的 packet ID 和 flit index，并检查重复 HEAD、非法 packet ID、目的节点错误、BODY/TAIL 丢失、重复、乱序和异常 label；这些错误除输出 `$error` 外，也会计入结果中的 `error_count`。同时增加启动期位宽检查，避免 packet ID 或 flit index 被静默截断。本次没有修改 RTL 和其他 tb。
+
+验证使用 Linux Vivado 2025.2，在临时目录执行 `xvlog`、`xelab`，然后通过 elaboration 参数把冒烟测试缩短为：
+
+```text
+WARMUP_CYCLES_PER_RATE=2
+MEASURE_CYCLES_PER_RATE=8
+DRAIN_CYCLES_PER_RATE=1000
+```
+
+20 个注入率点全部执行完成，结果为 `data_rows=20`、`bad_rows=0`；每行均满足 `measure_injected == measure_received`、`measure_queue_full == 0`、`error_count == 0`。第一次沙箱内 xsim 命中了已知 snapshot 加载异常，按项目规则在沙箱外重跑同一 snapshot 后通过。验证日志没有 `ERROR:`、`CRITICAL WARNING`、`$error`、`FAILED` 或 `FATAL`，仅保留既有 interface、timescale 和环境 warning。
+
+本次没有覆盖 `vivado_sim_wsl/` 中已有的完整 sweep 结果，也没有重新运行约 11 分钟的正式完整 sweep。
+
+<!-- Modify record completed packet-id plus flit-index payload encoding and bounded xsim verification, Michael Tan, 20260723 -->
+
+## 2026-07-24 packet 单位吞吐量曲线任务开始
+
+保留现有纵轴为 `flit/cycle/node` 的吞吐量图片，不重新运行 Vivado。基于已经验证的 `throughput_results.txt`，扩展现有绘图脚本，新增一张横轴、纵轴都使用 `packet/cycle/node` 的曲线，独立保存为 `throughput_curve_packet.png`。
+
+计划命令：
+
+```bash
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+<!-- Modify record start of packet-unit throughput curve task, Michael Tan, 20260724 -->
+
+## 2026-07-24 packet 单位吞吐量曲线完成
+
+修改了可复用绘图脚本：
+
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+生成命令：
+
+```bash
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+新增图片：
+
+- `vivado_sim_wsl/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/throughput_curve_packet.png`
+
+新图直接读取结果表中已经统计的 `throughput_packets_per_cycle_per_node_x1000000`，没有用 flit throughput 简单除以 4 代替。横轴是 offered injection rate，纵轴是 delivered packet throughput，两者单位均为 `packet/cycle/node`。坐标范围为 x=0.00～0.50、y=0.00～0.16，纵轴刻度间隔为 0.02。
+
+20 个实测点全部绘制。packet throughput 在 offered rate 0.01、0.14、0.16、0.50 时分别为 0.00940、0.13296、0.13628、0.13532；0.16～0.50 平台区的平均值、最小值、最大值分别为 0.134463、0.130040、0.137320 `packet/cycle/node`。图中低负载区接近 `throughput = offered packet rate`，约在 0.14～0.16 后进入饱和平台。
+
+新图为 1100×719 RGB PNG，大小 54251 bytes。已目视检查坐标单位、两位小数纵轴刻度、20 个数据点和平台范围，未发现标签重叠、裁切或数据越界。原来的 `throughput_curve.png` 继续保留为 flit 单位图。本次没有修改 RTL、testbench 或结果 TXT，也没有重新运行 Vivado。
+
+<!-- Modify record completed packet-unit throughput curve and verification, Michael Tan, 20260724 -->

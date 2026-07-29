@@ -19,10 +19,12 @@ Repository path:
 - The repository now lives on the Linux filesystem of WSL2, not under `/mnt/c`.
 - Current distribution: Ubuntu 24.04 on WSL2.
 - Use Linux paths and Bash commands by default.
-- `git` and Windows PowerShell interop are available, but Linux `vivado`, `xvlog`, `xelab`, and `xsim` are not currently installed or on `PATH`.
+- Linux Vivado 2025.2 is installed at `/home/tanma/tools/Xilinx/2025.2/Vivado`; load it with `source /home/tanma/tools/Xilinx/2025.2/Vivado/settings64.sh` before using `vivado`, `xvlog`, `xelab`, or `xsim`.
+- The required Ubuntu packages for xsim, including GCC/G++/Make and the Vivado Linux dependency set, are installed. A temporary `/tmp` smoke run of `tb_mesh` reached `[TB_MESH] PASSED` after xsim was allowed to run outside the Codex command sandbox.
+- Codex sandbox execution can cause xsim snapshot loading to fail with only `ERROR: unexpected exception when evaluating tcl command`. If `xvlog` and `xelab` succeed but this exact xsim load error appears, rerun the xsim/simulation command with approved escalated execution instead of treating it as an RTL or missing-library failure.
 - Existing `.ps1` files and the recorded `E:\Vivado\Vivado\2019.2` path belong to the former Windows workflow. Treat the PowerShell commands later in this file as historical run records unless the workflow has first been adapted and verified for the current environment.
 - Do not report a simulation as verified in the new environment merely because old Windows-generated logs or result files exist. Record whether a result is historical or newly reproduced.
-- Before future simulation work, check tool availability and paths. If Linux Vivado is installed later, prefer a Linux/Bash entry script while keeping old Windows scripts for reproducibility.
+- Before future simulation work, verify the Vivado 2025.2 path and use the matching Linux/Bash entry while keeping old Windows scripts for reproducibility.
 
 ## Canonical Repository Layout
 
@@ -48,10 +50,10 @@ noc-input-buffer/
   - tb: `testbench/<top>.sv`
   - Windows entry: `scripts/run_<top>.ps1`
   - Windows results: `vivado_sim_windows/<top>_sim/`
-  - future WSL entry: `scripts/run_<top>.sh`
+  - WSL entry: `scripts/run_<top>.sh`
   - WSL results: `vivado_sim_wsl/<top>_sim/`
 - `scripts/run_tb_mesh.ps1` is the shared runner. It now resolves the repository root from `scripts/..`, design files from `src/`, tb files from `testbench/`, and default outputs from `vivado_sim_windows/`.
-- The updated PowerShell paths have been checked statically, but a real Vivado run in the new WSL layout is still pending because Vivado/xsim is unavailable in the current Linux `PATH`.
+- The PowerShell paths remain the Windows workflow. The first reusable WSL/Linux `tb_mesh` run was completed on 2026-07-14 through `scripts/run_tb_mesh.sh`, with results under `vivado_sim_wsl/tb_mesh_sim/`.
 
 ## Script/Layout Separation Completed 2026-07-13
 
@@ -93,9 +95,9 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 ## Current State and Next Work
 
 - The Noxim-like injection-rate/average-latency work has already expanded from the original 2x3 baseline to multiple 5x5 sweeps.
-- The latest completed experiment is the 4-flit, queue-based 5x5 knee sweep recorded at the end of this file.
+- The latest completed experiment is the 4-flit, queue-based 5x5 knee sweep, now reproduced with Linux Vivado 2025.2 under WSL as recorded at the end of this file.
 - There is no pending code change implied solely by this document. Confirm the user's next requested experiment before modifying RTL or creating another tb.
-- The immediate environment task is to make future build/simulation commands reproducible from WSL/Linux; the historical Windows results remain useful reference data.
+- The WSL/Linux Vivado 2025.2 baseline flow is now reproducible through `scripts/run_tb_mesh.sh`; the verified baseline output is under `vivado_sim_wsl/tb_mesh_sim/`. Historical Windows results remain useful reference data.
 
 ## Current Important Files
 
@@ -106,6 +108,8 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - `testbench/`: all testbench files.
 - `testbench/tb_mesh_injection_sweep.sv`: current injection-rate sweep testbench.
 - `scripts/run_tb_mesh.ps1`: main Vivado command-line simulation script.
+- `scripts/run_tb_mesh.sh`: verified WSL/Linux Vivado 2025.2 entry for the baseline `tb_mesh` simulation.
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`: verified WSL/Linux entry for the 20-point 4-flit 5x5 queue-knee sweep.
 - `AGENTS.md`: Codex-facing memory file.
 - `README.md`: Chinese user-facing project summary.
 
@@ -993,3 +997,787 @@ Conclusion:
 - Synchronized and uploaded `AGENTS.md` and `README.md` with this cleanup.
 
 //Modify record removal of obsolete buffer directory and Markdown synchronization, Michael Tan, 20260713
+
+## Active Task Started 2026-07-14: First Reproducible WSL tb_mesh Simulation
+
+Goal:
+
+- Add the first Linux/Bash Vivado simulation entry at `scripts/run_tb_mesh.sh`.
+- Keep the existing Windows PowerShell workflow unchanged.
+- Compile, elaborate, and run the existing `testbench/tb_mesh.sv` with Linux Vivado 2025.2.
+- Save reusable WSL outputs under `vivado_sim_wsl/tb_mesh_sim/`.
+- Run xsim with approved escalated execution when invoked by Codex, because sandboxed xsim snapshot loading was proven to produce a false `unexpected exception` failure even when all libraries were present.
+- After the run, inspect generated logs and outputs and synchronize the verified result into both `AGENTS.md` and `README.md`.
+
+Planned command:
+
+```bash
+bash scripts/run_tb_mesh.sh
+```
+
+Expected outputs:
+
+- `vivado_sim_wsl/tb_mesh_sim/xvlog.log`
+- `vivado_sim_wsl/tb_mesh_sim/xelab.log`
+- `vivado_sim_wsl/tb_mesh_sim/xsim.log`
+- `vivado_sim_wsl/tb_mesh_sim/out.vcd`
+
+//Modify record start of first reproducible WSL/Linux tb_mesh simulation task, Michael Tan, 20260714
+
+## First Reproducible WSL tb_mesh Simulation Completed 2026-07-14
+
+Changed file:
+
+- `scripts/run_tb_mesh.sh`
+
+Environment:
+
+- Ubuntu 24.04 on WSL2.
+- Vivado/xvlog/xelab/xsim 2025.2 from `/home/tanma/tools/Xilinx/2025.2/Vivado`.
+- GCC, G++, Make, and the checked Vivado Linux dependency packages are installed.
+
+Command:
+
+```bash
+bash scripts/run_tb_mesh.sh
+```
+
+Result directory:
+
+`vivado_sim_wsl/tb_mesh_sim/`
+
+Verified outputs:
+
+- `xvlog.log`
+- `xelab.log`
+- `xsim.log`
+- `out.vcd` (391352 bytes)
+- `tb_mesh_sim.wdb`
+
+Verified result:
+
+```text
+[TB_MESH] output flit 0 at (1,2): label=0 vc=0 time=96000
+[TB_MESH] output flit 1 at (1,2): label=2 vc=0 time=106000
+[TB_MESH] PASSED
+$finish called at time : 135 ns
+```
+
+Log interpretation:
+
+- `xvlog`, `xelab`, and `xsim` all completed successfully.
+- The generated logs contain no `ERROR:`, `CRITICAL WARNING`, `$error`, or `FAILED` result.
+- Existing Vivado warnings remain for generated/array interface connections in `src/mesh.sv`, missing timescales in several design modules, and the detected `LIBRARY_PATH`; they did not prevent this test from passing.
+
+Codex execution rule for future simulations:
+
+- The earlier sandboxed xsim runs failed while loading a valid snapshot with `ERROR: unexpected exception when evaluating tcl command`.
+- Running the same snapshot outside the Codex command sandbox passed. This establishes the command sandbox as the cause of that specific failure in this environment.
+- Future Codex Vivado/xsim simulations must use an approved escalated command such as `bash scripts/run_tb_mesh.sh`. The approval prefix for this command was saved during this task.
+- Always inspect the generated result-directory logs and output files after the run; do not rely only on console output.
+
+No RTL or testbench file was modified for this environment/workflow task.
+
+//Modify record verified WSL Vivado 2025.2 tb_mesh flow and sandbox execution rule, Michael Tan, 20260714
+
+## Active Task Started 2026-07-14: WSL 4-Flit 5x5 Queue-Knee Sweep
+
+Goal:
+
+- Reproduce the previously Windows-verified `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv` experiment with Linux Vivado 2025.2 on WSL2.
+- Keep the existing tb, RTL, PowerShell entry, and Windows result directory unchanged.
+- Add `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
+- Save Linux outputs under `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/`.
+- Run the script with approved escalated execution so xsim does not hit the confirmed Codex sandbox snapshot-loading failure.
+- Verify all 20 injection-rate rows, `measure_injected == measure_received`, `measure_queue_full == 0`, `error_count == 0`, and generated logs/result files.
+
+Planned command:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+Expected key outputs:
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_results.txt`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/xsim.log`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/out.vcd`
+
+//Modify record start of WSL reproduction for 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714
+
+## WSL 4-Flit 5x5 Queue-Knee Sweep Completed 2026-07-14
+
+Added file:
+
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`
+
+Unchanged files:
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sv`
+- All RTL files under `src/`
+- The existing PowerShell entry and `vivado_sim_windows/` historical results
+
+Command:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh
+```
+
+WSL result directory:
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/`
+
+Key outputs:
+
+- `injection_latency_results.txt` (header plus 20 data rows)
+- `xvlog.log`
+- `xelab.log`
+- `xsim.log`
+- `out.vcd` (2154609075 bytes)
+- `tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim.wdb`
+
+Linux Vivado 2025.2 result summary:
+
+```text
+rate latency_cycles injected received queue_full errors
+0.010 11.953 235 235 0 0
+0.030 12.921 739 739 0 0
+0.050 14.762 1248 1248 0 0
+0.070 18.578 1744 1744 0 0
+0.090 37.283 2303 2303 0 0
+0.100 61.024 2545 2545 0 0
+0.120 176.726 3014 3014 0 0
+0.140 316.597 3593 3593 0 0
+0.160 412.535 4020 4020 0 0
+0.180 551.897 4462 4462 0 0
+0.200 712.666 5029 5029 0 0
+0.220 856.253 5572 5572 0 0
+0.240 987.239 6132 6132 0 0
+0.260 1079.501 6453 6453 0 0
+0.280 1293.909 6975 6975 0 0
+0.300 1405.161 7499 7499 0 0
+0.350 1846.494 8946 8946 0 0
+0.400 2139.670 10089 10089 0 0
+0.450 2558.392 11288 11288 0 0
+0.500 2876.995 12530 12530 0 0
+```
+
+Verification:
+
+- All 20 requested injection-rate points completed.
+- Automated row validation reported `data_rows=20` and `bad_rows=0`.
+- Every row has `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- The run finished at simulation time 586175 ns; xsim reported about 11 minutes 31 seconds elapsed and about 1450 MB peak process memory.
+- Generated logs contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`.
+- Existing interface/timescale/`LIBRARY_PATH` warnings remain non-fatal.
+
+Windows comparison note:
+
+- The WSL/Linux statistics are not numerically identical to the prior Windows Vivado 2019.2 results despite using the same tb seed.
+- The likely reason is version/platform-dependent SystemVerilog `$urandom` sequence behavior between Vivado 2019.2 on Windows and Vivado 2025.2 on Linux. The acceptance invariants and overall latency-knee behavior remain consistent.
+
+Codex execution rule:
+
+- This long xsim run was executed outside the command sandbox using the approved prefix `bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`.
+- Reuse that approved command for future reruns, then validate the generated result table and logs.
+
+//Modify record completed Linux Vivado 2025.2 reproduction of 4-flit 5x5 queue-knee sweep, Michael Tan, 20260714
+
+## Active Task Started 2026-07-14: WSL 4-Flit Queue-Knee Latency Plot
+
+Goal:
+
+- Generate a PNG curve from the WSL/Linux `injection_latency_results.txt` produced by the completed 4-flit 5x5 queue-knee sweep.
+- Match the existing Windows full-curve presentation: injection rate on the x-axis, average packet latency in cycles on the y-axis, blue line/markers, grid, and 1100x720 output size.
+- Save the image as `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_full.png`.
+- Verify that the plotted 20 points exactly match the WSL result table, then synchronize the final output into `AGENTS.md` and `README.md`.
+
+//Modify record start of WSL 4-flit queue-knee latency plot task, Michael Tan, 20260714
+
+## WSL 4-Flit Queue-Knee Latency Plot Completed 2026-07-14
+
+Added reusable plotting script:
+
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py`
+
+Command:
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+```
+
+Generated image:
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_full.png`
+
+Plot details:
+
+- Source: the WSL/Linux `injection_latency_results.txt` from the verified Vivado 2025.2 run.
+- X-axis: injection rate in packet/cycle/node.
+- Y-axis: average packet latency in cycles (`avg_latency_cycles_x1000 / 1000`).
+- Contains all 20 result points.
+- Uses a blue line with circular markers and gray grid, matching the existing Windows full-curve style.
+- PNG dimensions are 1100x719 pixels and file size is 47828 bytes.
+- The generator uses the already installed Graphviz `neato` renderer and Python standard library; matplotlib is not required.
+- Visual inspection confirmed the expected low-load flat region, knee after approximately 0.10, and continued high-load latency growth.
+
+//Modify record generated and verified WSL 4-flit injection-latency curve, Michael Tan, 20260714
+
+## Active Task Started 2026-07-14: WSL 4-Flit Queue-Knee Zoom Plot
+
+Goal:
+
+- Extend the existing WSL plot generator to also create `injection_latency_curve_knee_zoom.png`.
+- Match the Windows knee-zoom range: injection rate 0.00 to 0.16 and average packet latency 0 to 500 cycles.
+- Plot the 9 WSL result points from 0.01 through 0.16 with the same blue line/marker and gray-grid style.
+- Keep regenerating the existing full curve in the same command.
+
+//Modify record start of WSL 4-flit queue-knee zoom plot task, Michael Tan, 20260714
+
+## WSL 4-Flit Queue-Knee Zoom Plot Completed 2026-07-14
+
+Command:
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.py
+```
+
+Generated image:
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_sim/injection_latency_curve_knee_zoom.png`
+
+Plot details:
+
+- Injection-rate range: 0.00 to 0.16.
+- Average-latency range: 0 to 500 cycles.
+- Includes the nine Linux/WSL data points at 0.01, 0.03, 0.05, 0.07, 0.09, 0.10, 0.12, 0.14, and 0.16.
+- Image format and size: RGB PNG, 1100 x 719 pixels, 45,412 bytes.
+- Visual inspection confirmed that the axes, blue line/circle style, grid, and zoom range correspond to the existing Windows knee-zoom plot.
+- The reusable plotting script now regenerates both the full-range curve and this 0.16 zoom curve from the Linux result text file.
+
+//Modify record completed WSL 4-flit queue-knee zoom plot, Michael Tan, 20260714
+
+## Active Task Started 2026-07-15: Four-Virtual-Channel RTL
+
+Goal:
+
+- Expand the current NoC design from 2 virtual channels to 4 virtual channels.
+- Audit VC identifier widths, input buffering, VC allocation, and switch allocation instead of assuming that changing only the global constant is sufficient.
+- Keep existing testbenches unchanged and add a new simple dedicated testbench that exercises VC0, VC1, VC2, and VC3.
+- Add a matching WSL/Linux Vivado 2025.2 run script and independent result directory.
+- Verify the generated logs and test result before recording completion.
+
+Planned files:
+
+- RTL under `src/` as required by the four-VC audit, beginning with `src/noc.sv`.
+- `testbench/tb_mesh_4vc_simple.sv`
+- `scripts/run_tb_mesh_4vc_simple.sh`
+
+Planned command:
+
+```bash
+bash scripts/run_tb_mesh_4vc_simple.sh
+```
+
+Expected result directory:
+
+`vivado_sim_wsl/tb_mesh_4vc_simple_sim/`
+
+//Modify record start of four-virtual-channel RTL and simple verification task, Michael Tan, 20260715
+
+## Four-Virtual-Channel RTL and Simple Test Completed 2026-07-15
+
+Changed RTL:
+
+- `src/noc.sv`: changed global `VC_NUM` from 2 to 4; `VC_SIZE = $clog2(VC_NUM)` therefore becomes 2 bits.
+- `src/separable_input_first_allocator.sv`: changed its standalone default `VC_NUM` from 2 to 4. Router instances already pass the global value explicitly, but the default is now consistent.
+
+Added verification files:
+
+- `testbench/tb_mesh_4vc_simple.sv`
+- `scripts/run_tb_mesh_4vc_simple.sh`
+
+Audit conclusion:
+
+- Input ports generate one independent input buffer per `VC_NUM`.
+- VC identifiers, allocator matrices, flow-control vectors, allocator loops, and switch-selection widths derive from `VC_NUM`/`VC_SIZE`.
+- The round-robin allocator supports four agents, so no further fixed two-VC RTL was found in the active path.
+
+Vivado command:
+
+```bash
+bash scripts/run_tb_mesh_4vc_simple.sh
+```
+
+Result directory:
+
+`vivado_sim_wsl/tb_mesh_4vc_simple_sim/`
+
+Verified result file:
+
+```text
+vc_num expected_flits received_flits head_seen tail_seen output_vc_seen error_count
+4 8 8 1111 1111 0011 0
+```
+
+Verification interpretation:
+
+- The tb first injects HEAD flits into input VC0, VC1, VC2, and VC3, then injects the four matching TAIL flits. This keeps all four source VCs active in the same test.
+- All four packets and all eight flits arrived at the expected destination with correct packet IDs and ordering.
+- `head_seen=1111`, `tail_seen=1111`, and `error_count=0`; xsim printed `[TB_MESH_4VC] PASSED` at 245 ns.
+- `output_vc_seen=0011` is valid: downstream VC numbers are independently reallocated at every hop, and this traffic needed only downstream VC0/VC1 even though all four source input VCs were exercised.
+- `xvlog.log`, `xelab.log`, and `xsim.log` contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`. Existing interface/timescale/`LIBRARY_PATH` warnings remain non-fatal.
+- The Bash runner now requires the tb PASS marker, because xsim can return process status 0 even after a SystemVerilog `$fatal`.
+
+Key generated files:
+
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/tb_mesh_4vc_simple_results.txt`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xvlog.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xelab.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/xsim.log`
+- `vivado_sim_wsl/tb_mesh_4vc_simple_sim/out.vcd`
+
+//Modify record completed four-virtual-channel RTL and simple Vivado verification, Michael Tan, 20260715
+
+## Active Task Started 2026-07-15: Four-VC 5x5 4-Flit Queue-Knee Sweep
+
+Goal:
+
+- Run the previous 5x5 Noxim-style queue-based 4-flit knee sweep with the new four-VC RTL.
+- Do not reuse or overwrite the previous tb name or its WSL result directory.
+- Create a separate tb named `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`.
+- Add `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh` and save results under the matching independent WSL directory.
+- Keep the same 20 injection-rate points, 4-flit packet format, queue depth, warm-up, measurement, and drain settings for comparison with the earlier run.
+- Verify all rows, packet accounting invariants, queue-full/error counts, and generated Vivado logs.
+
+Planned command:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+```
+
+Expected result directory:
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`
+
+//Modify record start of independent four-VC 5x5 4-flit queue-knee sweep, Michael Tan, 20260715
+
+## Four-VC 5x5 4-Flit Queue-Knee Sweep Completed 2026-07-15
+
+Added files:
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+
+Isolation and configuration:
+
+- The previous `tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit` tb and result directory were not reused or overwritten.
+- The new tb requires `VC_NUM=4` and `VC_SIZE=2` at runtime.
+- It retains the previous 20 injection-rate points, `PACKET_FLIT_NUM=4`, `WARMUP_CYCLES_PER_RATE=200`, `MEASURE_CYCLES_PER_RATE=1000`, `DRAIN_CYCLES_PER_RATE=8000`, and `SOURCE_QUEUE_DEPTH=2048`.
+
+Command:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+```
+
+Result directory:
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`
+
+Linux Vivado 2025.2 result summary:
+
+```text
+rate latency_cycles injected received queue_full errors
+0.010 11.948 235 235 0 0
+0.030 12.820 739 739 0 0
+0.050 14.400 1248 1248 0 0
+0.070 16.378 1744 1744 0 0
+0.090 19.817 2303 2303 0 0
+0.100 22.565 2545 2545 0 0
+0.120 35.714 3014 3014 0 0
+0.140 84.153 3593 3593 0 0
+0.160 153.643 4020 4020 0 0
+0.180 268.786 4462 4462 0 0
+0.200 391.048 5029 5029 0 0
+0.220 474.048 5572 5572 0 0
+0.240 571.510 6132 6132 0 0
+0.260 645.762 6453 6453 0 0
+0.280 794.567 6975 6975 0 0
+0.300 887.461 7499 7499 0 0
+0.350 1223.836 8946 8946 0 0
+0.400 1418.524 10089 10089 0 0
+0.450 1704.706 11288 11288 0 0
+0.500 1913.803 12530 12530 0 0
+```
+
+Verification:
+
+- All 20 rows completed; automated validation reported `data_rows=20` and `bad_rows=0`.
+- Every row has `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- `xvlog.log`, `xelab.log`, and `xsim.log` contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`.
+- Simulation finished at 464335 ns in approximately 11 minutes 31 seconds, with about 1450 MB peak process memory.
+- Key files include `injection_latency_results.txt` (1488 bytes), `xsim.log` (6108 bytes), and `out.vcd` (2604935407 bytes).
+
+Comparison with the prior two-VC WSL run:
+
+- The same random traffic counts were reproduced, so the latency comparison is directly useful for this experiment.
+- At rates 0.10, 0.20, and 0.50, average latency changed from 61.024/712.666/2876.995 cycles to 22.565/391.048/1913.803 cycles with four VCs.
+- The four-VC curve still saturates under high offered load, but its knee is later and queueing latency is lower across the sampled congested region.
+
+//Modify record completed independent four-VC 5x5 4-flit queue-knee Vivado sweep, Michael Tan, 20260715
+
+## Active Task Started 2026-07-15: Four-VC Queue-Knee Plots
+
+Goal:
+
+- Generate two PNG plots from the completed four-VC 5x5 4-flit queue-knee result table.
+- Match the prior two-VC WSL plot style and axis ranges for direct visual comparison.
+- Create one full-range plot for injection rate 0.00-0.50 and latency 0-3000 cycles.
+- Create one knee zoom plot for injection rate 0.00-0.16 and latency 0-500 cycles.
+- Use a separate reusable `_4vc` plotting script and save both images in the four-VC result directory.
+
+Planned script:
+
+`scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+//Modify record start of four-VC full and knee-zoom latency plots, Michael Tan, 20260715
+
+## Four-VC Queue-Knee Plots Completed 2026-07-15
+
+Added reusable script:
+
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+Command:
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+Generated images:
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_full.png`
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_knee_zoom.png`
+
+Verification:
+
+- The full plot contains all 20 result points and uses the same 0.00-0.50 injection-rate and 0-3000 cycle ranges as the prior two-VC full plot.
+- The zoom plot contains the nine points from 0.01 through 0.16 and uses the same 0.00-0.16 and 0-500 cycle ranges as the prior two-VC zoom plot.
+- Both images are RGB PNG files at 1100 x 719 pixels.
+- Full image size is 45852 bytes; zoom image size is 40185 bytes.
+- Visual inspection confirmed correct four-VC titles, blue line/circle style, grid, axes, no clipping, and the expected later latency knee.
+
+//Modify record completed four-VC full and knee-zoom latency plots, Michael Tan, 20260715
+
+## Active Task Started 2026-07-15: Adjust Four-VC Knee Zoom Range
+
+Goal:
+
+- Redraw the four-VC knee zoom because the inherited 0.00-0.16 range stops before the steep rise is fully visible.
+- Use injection rate 0.00-0.24 and latency 0-700 cycles, covering 13 measured points through the 571.510-cycle result at rate 0.24.
+- Use clean ticks of 0.04 injection rate and 100 latency cycles.
+- Replace only the four-VC `injection_latency_curve_knee_zoom.png`; retain the full-range plot and the separate two-VC images.
+
+//Modify record start of improved four-VC knee zoom range, Michael Tan, 20260715
+
+## Four-VC Knee Zoom Range Adjustment Completed 2026-07-15
+
+Changed script:
+
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+Command:
+
+```bash
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+Updated image:
+
+- `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_curve_knee_zoom.png`
+
+Final zoom settings and verification:
+
+- Injection-rate range: 0.00-0.24 with 0.04 tick spacing.
+- Average-latency range: 0-700 cycles with 100-cycle tick spacing.
+- Includes 13 measured points from rate 0.01 through 0.24.
+- The 0.16-0.24 steep rise from 153.643 to 571.510 cycles is now fully visible.
+- RGB PNG, 1100 x 719 pixels, 44257 bytes.
+- Visual inspection confirmed readable axes, no clipping, useful top margin, and a clear flat-to-knee-to-steep-rise transition.
+- The full-range image is still regenerated by the same command with its unchanged 0.00-0.50/0-3000 ranges.
+
+//Modify record completed improved four-VC knee zoom range, Michael Tan, 20260715
+
+## Active Task Started 2026-07-15: Four-VC Throughput Sweep
+
+Goal:
+
+- Add a new independent throughput experiment for the four-VC 5x5 4-flit queue-based traffic mode.
+- Keep all existing latency testbenches and result directories unchanged.
+- Measure delivered flits and completed packets strictly inside a fixed 1000-cycle measurement window after warm-up.
+- Report normalized flit throughput in flit/cycle/node and packet throughput in packet/cycle/node.
+- Continue draining after measurement only for packet-integrity checks; exclude drain traffic from throughput statistics.
+- Sweep the same 20 offered packet rates from 0.01 through 0.50, then generate a throughput curve expected to plateau after saturation.
+
+Planned files:
+
+- `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+//Modify record start of independent four-VC throughput sweep and curve, Michael Tan, 20260715
+
+## Four-VC Throughput Sweep and Curve Completed 2026-07-15
+
+Added files:
+
+- `testbench/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh`
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+Measurement definition:
+
+- Counts every flit delivered at the 25 local outputs during exactly 1000 complete measurement clock edges after 200 warm-up cycles.
+- Normalized flit throughput is `received_flits_window / (1000 * 25)` in flit/cycle/node.
+- Packet throughput counts TAIL flits in the same window and uses packet/cycle/node.
+- Drain traffic is excluded from throughput, while drain still verifies all measurement packets eventually arrive without loss.
+
+Commands:
+
+```bash
+bash scripts/run_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.sh
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+Result directory:
+
+`vivado_sim_wsl/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/`
+
+Verified throughput summary:
+
+```text
+packet_rate flit_throughput packet_throughput
+0.010 0.03772 0.00940
+0.030 0.11836 0.02964
+0.050 0.19900 0.04956
+0.070 0.27900 0.06968
+0.090 0.36696 0.09184
+0.100 0.40676 0.10168
+0.120 0.47488 0.11872
+0.140 0.53252 0.13296
+0.160 0.54460 0.13628
+0.180 0.52464 0.13100
+0.200 0.52144 0.13004
+0.220 0.54492 0.13624
+0.240 0.53748 0.13432
+0.260 0.54424 0.13596
+0.280 0.54220 0.13540
+0.300 0.54016 0.13520
+0.350 0.52584 0.13140
+0.400 0.54940 0.13732
+0.450 0.54016 0.13508
+0.500 0.54052 0.13532
+```
+
+Verification and interpretation:
+
+- All 20 rows completed with `data_rows=20`, `bad_rows=0`, `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- Throughput follows offered load at low rates and reaches a clear plateau around packet rate 0.14-0.16.
+- Across the 12 points from rate 0.16 through 0.50, flit throughput mean/min/max are 0.537967/0.521440/0.549400 flit/cycle/node.
+- Small plateau fluctuations are expected from the finite 1000-cycle window and randomized traffic.
+- Vivado run completed in approximately 11 minutes 20 seconds at simulation time 464335 ns.
+- Logs contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`.
+- Generated `throughput_curve.png` contains all 20 points, is 1100 x 719 RGB PNG, and is 47974 bytes. Visual inspection confirmed the expected linear-growth-to-saturation-platform shape.
+- `out.vcd` is 2605528334 bytes.
+- This experiment inherits the existing traffic generator behavior that injects local source traffic through VC0; the internal four-VC fabric remains active for downstream VC allocation.
+
+//Modify record completed four-VC fixed-window throughput sweep and saturation curve, Michael Tan, 20260715
+
+## Active Task Started 2026-07-22: Four-VC Center-Hotspot Latency Sweep
+
+Goal:
+
+- Add a new independent 5x5, 4-flit, four-VC, queue-based latency sweep using hotspot traffic, without changing the existing uniform-random latency/throughput experiments or RTL.
+- Use center node `(2,2)` as the single hotspot and `HOTSPOT_PROBABILITY_PERMILLE = 200` (`H = 0.2`).
+- For every non-hotspot source, choose `(2,2)` with probability 0.2; otherwise choose a uniformly random destination excluding both itself and the hotspot, so the explicit hotspot probability remains exactly 0.2. The hotspot source itself always chooses another node.
+- Retain the existing 20 injection-rate points and the random baseline's packet length, queue depth, warm-up, measurement, seed, and four-VC checks for direct comparison. Use a hotspot-specific 16000-cycle drain limit because the single hotspot's 4-flit local output needs more time than the random baseline to empty high-rate queues.
+- Add an independent WSL/Linux Vivado runner and result directory, then verify the complete result table and Vivado logs.
+
+Planned files:
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+
+Planned command:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+```
+
+Expected result directory:
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot_sim/`
+
+//Modify record start of four-VC center-hotspot latency sweep, Michael Tan, 20260722
+
+## Four-VC Center-Hotspot Latency Sweep Completed 2026-07-22
+
+Added files:
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sv`
+- `scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh`
+- `scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py`
+
+Traffic and measurement definition:
+
+- No RTL source file was changed for this experiment.
+- The single hotspot is center node `(2,2)` with `HOTSPOT_PROBABILITY_PERMILLE=200` (`H=0.2`).
+- A non-hotspot source uses the hotspot branch with probability 0.2; the remaining random branch excludes both self and hotspot. The hotspot source selects a random non-self destination.
+- The theoretical hotspot share across all generated packets is `0.2 * 24/25 = 0.192`; the result table records the realized hotspot packet count/share per rate.
+- Configuration is otherwise the four-VC random baseline: 5x5 mesh, 4-flit packets, 20 injection-rate points, 200 warm-up cycles, 1000 measurement cycles, source queue depth 2048, and the same seed. The hotspot drain limit is 16000 cycles.
+
+Commands:
+
+```bash
+bash scripts/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.sh
+python3 scripts/plot_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot.py
+```
+
+Result directory:
+
+`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_hotspot_sim/`
+
+Verified latency summary:
+
+```text
+packet_rate avg_latency_cycles
+0.010 12.137
+0.030 13.324
+0.050 19.243
+0.070 181.573
+0.090 385.141
+0.100 569.483
+0.120 886.364
+0.140 1057.084
+0.160 1335.380
+0.180 1585.764
+0.200 1769.841
+0.220 2114.957
+0.240 2345.978
+0.260 2401.783
+0.280 2974.747
+0.300 3159.688
+0.350 3943.168
+0.400 4332.622
+0.450 5093.534
+0.500 5672.454
+```
+
+Verification and interpretation:
+
+- All 20 rows completed; every row has `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- Across 104102 measurement-generated packets, 19811 targeted the hotspot, giving a realized overall hotspot share of 0.190304 versus the theoretical 0.192.
+- The hotspot curve is near the low-load baseline through rate 0.05, then rises sharply at 0.07; the random four-VC baseline did not show its comparable knee until roughly 0.12-0.16.
+- The maximum actual drain was 10661 cycles at rate 0.50, within the 16000-cycle limit; all 12460 measurement packets at that rate arrived.
+- Linux Vivado 2025.2 xsim finished at 1026495 ns in approximately 9 minutes 38 seconds. `xvlog.log`, `xelab.log`, and `xsim.log` contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`.
+- Generated full and knee-zoom plots are 1100 x 719 RGB PNG files. The full plot uses rate 0.00-0.50 and latency 0-6000 cycles; the zoom uses rate 0.00-0.12 and latency 0-1000 cycles. Visual inspection confirmed that all points are inside the axes and the early hotspot knee is clear.
+
+Key generated files:
+
+- `injection_latency_results.txt`
+- `injection_latency_curve_full.png`
+- `injection_latency_curve_knee_zoom.png`
+- `xvlog.log`, `xelab.log`, `xsim.log`
+- `out.vcd`
+
+//Modify record completed four-VC center-hotspot latency sweep and plots, Michael Tan, 20260722
+
+## Active Task Started 2026-07-23: Packet ID and Flit Index Encoding
+
+Goal:
+
+- Modify only `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`; keep RTL and the other experiments unchanged.
+- Encode both `packet_id` and `flit_index` in each BODY/TAIL `bt_pl`.
+- Decode and validate both fields at the destination so a duplicated, missing, or reordered BODY/TAIL flit is reported with its packet ID and flit index.
+- Preserve the HEAD destination fields and packet-level latency/statistics definition.
+
+Planned verification:
+
+- Compile and elaborate the modified top with Linux Vivado 2025.2 in a temporary directory, without overwriting the existing reusable sweep results.
+
+//Modify record start of packet-id plus flit-index payload encoding task, Michael Tan, 20260723
+
+## Packet ID and Flit Index Encoding Completed 2026-07-23
+
+Changed files:
+
+- `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc.sv`
+- `AGENTS.md`
+- `README.md`
+
+Encoding and checking:
+
+- For the current 4-flit packet, `FLIT_INDEX_SIZE = $clog2(PACKET_FLIT_NUM) = 2`.
+- HEAD keeps its routing fields and 16-bit packet ID in `head_pl`.
+- BODY/TAIL `bt_pl[1:0]` stores `flit_index`; the next 16 bits store `packet_id`; unused upper payload bits are zero.
+- The transmitted indices are HEAD=0, BODY=1, BODY=2, TAIL=3.
+- The monitor decodes BODY/TAIL packet ID and flit index separately and maintains `pkt_expected_flit_index` for every packet. Duplicate HEAD, invalid packet ID, destination mismatch, missing/duplicated/reordered BODY/TAIL, and unexpected labels now increment `error_seen` and issue `$error`.
+- Static startup checks ensure the encoding fits `FLIT_DATA_SIZE` and the maximum possible packets generated in one rate fit the shared 16-bit packet-ID field.
+- No RTL file or other testbench was changed by this task.
+
+Verification:
+
+- Linux Vivado 2025.2 `xvlog` and `xelab` passed in a temporary directory.
+- A bounded xsim smoke run used elaboration overrides `WARMUP_CYCLES_PER_RATE=2`, `MEASURE_CYCLES_PER_RATE=8`, and `DRAIN_CYCLES_PER_RATE=1000`, while retaining all 20 injection-rate points.
+- The sandbox run first encountered the documented `ERROR: unexpected exception when evaluating tcl command`; rerunning the same xsim snapshot with approved escalated execution completed successfully.
+- Smoke result: `data_rows=20`, `bad_rows=0`; every row has `measure_injected == measure_received`, `measure_queue_full == 0`, and `error_count == 0`.
+- Verification logs contain no `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL`; only the existing interface, timescale, and environment warnings remain.
+- The existing full-sweep result directory under `vivado_sim_wsl/` was not modified or overwritten. A new full-length sweep was not run for this encoding-only change.
+
+//Modify record completed packet-id plus flit-index payload encoding and bounded xsim verification, Michael Tan, 20260723
+
+## Active Task Started 2026-07-24: Packet-Unit Throughput Curve
+
+Goal:
+
+- Keep the existing flit-throughput PNG unchanged.
+- Reuse the verified `throughput_results.txt`; do not rerun Vivado.
+- Extend the throughput plotting script to generate a second curve whose x-axis and y-axis are both normalized in `packet/cycle/node`.
+- Save the new plot independently as `throughput_curve_packet.png`.
+
+Planned command:
+
+```bash
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+//Modify record start of packet-unit throughput curve task, Michael Tan, 20260724
+
+## Packet-Unit Throughput Curve Completed 2026-07-24
+
+Changed file:
+
+- `scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py`
+
+Generated file:
+
+- `vivado_sim_wsl/tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/throughput_curve_packet.png`
+
+Command:
+
+```bash
+python3 scripts/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4flit_4vc.py
+```
+
+Result:
+
+- The existing `throughput_curve.png` remains the flit-unit curve.
+- The new curve reads the recorded `throughput_packets_per_cycle_per_node_x1000000` column directly.
+- Both axes of the new curve use `packet/cycle/node`; x spans 0.00-0.50 and y spans 0.00-0.16 with 0.02 tick spacing.
+- All 20 verified result points are plotted. The delivered packet throughput is 0.00940 at offered rate 0.01, 0.13296 at 0.14, 0.13628 at 0.16, and 0.13532 at 0.50.
+- Across offered rates 0.16-0.50, the packet-throughput plateau mean/min/max are 0.134463/0.130040/0.137320 packet/cycle/node.
+- The PNG is 1100 x 719 RGB and 54251 bytes. Visual inspection confirmed correct labels, distinct y ticks, no clipping, low-load `throughput approximately equals offered packet rate`, and a clear saturation plateau.
+- No RTL, testbench, result TXT, or Vivado simulation was changed or rerun.
+
+//Modify record completed packet-unit throughput curve and verification, Michael Tan, 20260724

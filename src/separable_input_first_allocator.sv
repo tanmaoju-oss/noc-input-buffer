@@ -1,7 +1,8 @@
 import noc_params::*;
 
 module separable_input_first_allocator #(
-    parameter VC_NUM = 2
+    //parameter VC_NUM = 2//Original, Michael Tan, 20260715
+    parameter VC_NUM = 4//Modify align the standalone allocator default with the four-VC NoC, Michael Tan, 20260715
 )(
     input rst,
     input clk,

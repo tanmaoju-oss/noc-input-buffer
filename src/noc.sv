@@ -6,7 +6,8 @@ package noc_params;
 	localparam DEST_ADDR_SIZE_X = $clog2(MESH_SIZE_X);
 	localparam DEST_ADDR_SIZE_Y = $clog2(MESH_SIZE_Y);
 
-	localparam VC_NUM = 2;
+	//localparam VC_NUM = 2;//Original, Michael Tan, 20260715
+	localparam VC_NUM = 4;//Modify expand the NoC from two to four virtual channels, Michael Tan, 20260715
 	localparam VC_SIZE = $clog2(VC_NUM);
 
 	localparam HEAD_PAYLOAD_SIZE = 16;

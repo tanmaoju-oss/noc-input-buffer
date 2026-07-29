@@ -41,6 +41,9 @@ AGENTS.md
 README.md
 
 # Temporary/editor files
+# Modify ignore generated Python bytecode caches, Michael Tan, 20260729
+__pycache__/
+*.py[cod]
 *.tmp
 *.bak
 ~$*
