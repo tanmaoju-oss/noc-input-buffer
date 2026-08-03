@@ -833,6 +833,15 @@ git config user.email "tanma@local"
 
 //Modify add current Git setup notes, Michael Tan, 20260626
 
+## Weekly Report Writing Preference
+
+- When drafting a "下周进展" weekly report, use a fixed Monday-to-Friday schedule with separate morning and afternoon entries, for a total of ten entries.
+- Balance the entries across: (1) R&D work currently focused on Vivado `mesh` synthesis flow, report review, and script debugging, (2) Party-building work, and (3) company financing work.
+- When possible, concentrate Party-building and company-financing entries into no more than two weekdays, leaving the remaining weekdays focused on R&D work.
+- For the August-September two-month plan, keep the R&D plan paced through synthesis-to-board preparation and debugging; do not list clock/XDC constraints as an immediate task or prematurely claim timing closure, implementation completion, or board-level validation.
+
+//Modify record weekly-report schedule and scope preference, Michael Tan, 20260731
+
 ## Latest MBO Document Status
 
 Date: 2026-06-29

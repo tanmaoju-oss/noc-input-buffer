@@ -40,6 +40,9 @@ kpi/
 AGENTS.md
 README.md
 
+# Local weekly work records, keep only on this machine
+file/
+
 # Temporary/editor files
 # Modify ignore generated Python bytecode caches, Michael Tan, 20260729
 __pycache__/
