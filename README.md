@@ -36,6 +36,20 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 当前已增加并验证 WSL/Linux Bash 入口 `scripts/simulation/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
 
+## 2026-08-03 上板与 ILA 长期工作基线
+
+本项目的 NoC 上板/ILA 工作将分阶段完成，不要求在一次修改中完成所有 RTL、综合和实机验证。首版范围固定为无 DDR 的 NoC 调试工程：不使用 SD 卡、Flash、DDR、SPI、UART 或原 SoC 的用户 JTAG 接口。
+
+- 目标 FPGA：`xcvu440-flga2892-2-e`。
+- 综合、实现和生成位流：继续使用已授权的 Windows Vivado 2019.2。
+- 下载和 ILA 调试：计划使用 Vivado 2022 Hardware Manager，通过 USB/JTAG 直接下载由 2019.2 生成的 `.bit`，并加载同一次构建生成的配套 `.ltx`。该配置为易失性，上电后需要重新下载。
+- 已从板级照片确认：100 MHz 差分时钟端口为 `l_pad_clk_p/n`，管脚 `AT49/AU49`，标准 `DIFF_SSTL12`；低有效复位为 `l_pad_rst_b`，管脚 `R12`，标准 `LVCMOS18`。参考文件在 `constraints/soc_dcpu_j2/`。
+- 新的无 DDR NoC 顶层将采用 `l_pad_clk_p/n → IBUFDS → BUFG → 100 MHz noc_clk`，并用 `l_pad_rst_b` 经过复位同步器生成内部复位。SoC 的后续时钟路径依赖 DDR MIG，不能照搬。
+- 首个硬件负载与现有均匀随机 4VC、4-flit、5x5 的 0.1 注入率实验对齐：每节点每周期按 0.1 概率生成包、源端队列、可综合 LFSR、从“进入源队列”到“TAIL 到达”统计延迟。ILA 观察统计和内部调试信号，不需要额外 probe 引脚约束。
+- 仿真参考点：`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_results.txt` 中 0.1 点为 2545 个测量包全部接收、无队列满/错误、平均延迟 22.565 cycles。硬件使用 LFSR，要求统计口径可比，不要求逐周期完全相同。
+
+<!-- Modify record persistent board bring-up and direct-JTAG ILA baseline, Michael Tan, 20260803 -->
+
 ## 标准目录结构
 
 以后新增或修改文件时，统一遵守下面的结构：
@@ -43,6 +57,8 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 ```text
 noc-input-buffer/
 ├── src/          # 只放 SystemVerilog 设计/RTL 代码
+│   └── board_ila/ # 预留给板级 ILA/调试 RTL，不放 Vivado 生成文件
+├── constraints/  # 按开发板型号存放 XDC 约束及说明
 ├── testbench/    # 统一存放所有 SystemVerilog testbench
 ├── scripts/
 │   ├── simulation/ # 仿真、编译检查和结果绘图脚本
@@ -55,6 +71,8 @@ noc-input-buffer/
 具体规则：
 
 - `src/` 只放项目设计代码，不放 tb、脚本、日志、波形或 Vivado 生成文件。
+- `src/board_ila/` 已于 2026-08-03 创建，预留给后续上板 NoC/ILA 调试 RTL；当前为空，不存放 XDC、IP 生成物、日志或位流。//Modify reserve isolated board-level ILA RTL directory, Michael Tan, 20260803
+- `constraints/` 已于 2026-08-03 创建；后续从官方工程取得 XDC 后，按 `constraints/<开发板型号>/` 存放。未确认实际开发板及其官方约束前，不自行填写具体管脚号。//Modify reserve board-constraint directory for planned ILA bring-up, Michael Tan, 20260803
 - 所有 tb 文件直接放在顶层 `testbench/`，不要再创建 `src/tb/`、`test/tb/` 等目录。
 - 仿真、编译检查和结果绘图脚本统一放在 `scripts/simulation/`；Windows Vivado 综合脚本统一放在 `scripts/synthesis/`。
 - 每个 tb 使用独立结果目录：Windows 结果放 `vivado_sim_windows/<顶层模块名>_sim/`，WSL/Linux 结果放 `vivado_sim_wsl/<顶层模块名>_sim/`。
@@ -114,6 +132,8 @@ git status --short
 - `scripts/`：Windows PowerShell 仿真入口、WSL/Linux Bash 入口和环境设置脚本。
 - `vivado_sim_windows/`：迁移来的 Windows 历史结果，以及以后由 PowerShell/Windows Vivado 生成的结果。
 - `vivado_sim_wsl/`：WSL/Linux Vivado 仿真结果；当前已包含通过验证的 `tb_mesh_sim/` 基础结果。
+- `constraints/soc_dcpu_j2/soc_dcpu_j2.xdc`：根据提供的 XDC 照片转写的板级约束；已确认 100 MHz 差分时钟为 `AT49/AU49`、低有效复位为 `R12`。端口前缀为小写字母 `l_pad_*`/`o_pad_*`，不是数字。照片在 DDR 标题处截断，未转写任何 DDR 管脚；该文件尚未接入新的板级顶层。
+- `constraints/soc_dcpu_j2/soc_mult_cpu_top_port_reference.v.txt`：根据照片转写的 SoC 顶层端口与时钟参考片段，确认差分时钟通过 `IBUFDS` 接收；原 SoC 后续时钟生成依赖 DDR MIG 的 `ddr_ui_clk/ddr_ui_rst`，不能用于本项目的无 DDR 顶层。该文件不能参与本项目编译。//Modify record photo-transcribed board clock/reset top reference, Michael Tan, 20260803
 - `project_*`：迁移过来的 Vivado 工程目录。
 - `buffer/`：早期 input buffer 相关代码和分析材料；当前工作区内该目录已有删除项，处理前先看 Git 状态。
 - `kpi/`：报告与绩效材料，不是当前 NoC RTL 主线。

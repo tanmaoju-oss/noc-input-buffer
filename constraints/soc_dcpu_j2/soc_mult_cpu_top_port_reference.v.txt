@@ -1,0 +1,126 @@
+// Transcribed visible top-level port declaration from photo3.jpg and photo4.jpg, Michael Tan, 20260803
+// Reference only: this is an incomplete SoC module excerpt and must not be compiled in noc-input-buffer.
+
+module SoC_Mult_CPU (
+`ifdef DUAL_BANK
+    `ifdef SIM_Aurora
+    `else
+        output HARD_ERR_cpu1,
+        output SOFT_ERR_cpu1,
+        output [0:3]LANE_UP_cpu1,
+        output CHANNEL_UP_cpu1,
+        input [0:3] RXP_cpu1,
+        input [0:3] RXN_cpu1,
+        output [0:3]TXP_cpu1,
+        output [0:3]TXN_cpu1,
+    `endif
+`endif
+`ifdef SOC_SIM
+    input l_pad_clk,
+`else
+    input l_pad_clk_p,
+    input l_pad_clk_n,
+    //DDR
+    output [16:0] c0_ddr4_adr,
+    output [1:0] c0_ddr4_ba,
+    output [0:0] c0_ddr4_cke,
+    output [0:0] c0_ddr4_cs_n,
+    inout [7:0] c0_ddr4_dm_dbi_n,
+    inout [63:0] c0_ddr4_dq,
+    inout [7:0] c0_ddr4_dqs_c,
+    inout [7:0] c0_ddr4_dqs_t,
+    output [0:0] c0_ddr4_odt,
+    output [1:0] c0_ddr4_bg,
+    output c0_ddr4_reset_n,
+    output c0_ddr4_act_n,
+    output [0:0] c0_ddr4_ck_c,
+    output [0:0] c0_ddr4_ck_t,
+    output o_ddr_init_led,
+
+    //SPI
+    output spi_mosi,
+    input spi_miso,
+    output spi_ss,
+    output spi_clk_o,
+
+    // input l_pad_jtg_j4_tclk,
+    // input l_pad_jtg_j4_tdi,
+    // input l_pad_jtg_j4_tms,
+    // input l_pad_jtg_j4_trst_b,
+    // output o_pad_jtg_j4_tdo,
+`endif
+
+    input l_pad_rst_b,
+    //JTAG
+    input l_pad_jtg_tclk,
+    input l_pad_jtg_tdi,
+    input l_pad_jtg_tms,
+    input l_pad_jtg_trst_b,
+    output o_pad_jtg_tdo,
+    //UART
+    input l_pad_uart0_sin,
+    output o_pad_uart0_sout,
+    //GPIO
+    // inout [7:0] b_pad_gpio_porta
+);
+
+`ifdef SOC_SIM
+    `include "/home/wangxiaocong/ARM0304/CCI_SACE_work/verilog/cc1500_functions.v"
+`else
+    `include "cc1500_functions.v"
+`endif
+
+import numa_soc::*;
+
+// Clock/reset excerpt transcribed from photo5.jpg through photo8.jpg, Michael Tan, 20260803
+// The original SoC path below depends on DDR MIG signals (ddr_ui_clk/ddr_ui_rst).
+// It is reference material only and must not be copied into the DDR-free NoC top.
+`ifdef SOC_SIM
+    assign pad_cpu_rst_b = l_pad_rst_b;
+    assign dirty_enable = 1'b1;
+    assign wrsnp_enable = 1'b1;
+    assign pref_enable = 1'b1;
+    assign cache_enable = 1'b1;
+`else
+    wire l_pad_clk;
+    wire ddr_ui_clk;
+    wire ddr_ui_rst;
+    wire c0_init_calib_complete;
+    // assign o_ddr_init_led = c0_init_calib_complete;
+    assign o_ddr_init_led = c0_init_calib_complete | crid_alarm0 | crid_alarm1 | cdid_alarm0 | cdid_alarm1;
+
+    wire sys_clk;
+    wire pll_rstn;
+    wire vio_top_rst;
+
+    IBUFDS #(
+        .DIFF_TERM("FALSE"),
+        .IBUF_LOW_PWR("FALSE")
+    )
+    u_ibufg_sys_clk (
+        .I(l_pad_clk_p),
+        .IB(l_pad_clk_n),
+        .O(sys_clk)
+    );
+
+    xlnx_clkgen inst_soc_clkgen (
+        .clk_out1(l_pad_clk), // output clk_out1
+        .reset(ddr_ui_rst),   // input reset
+        .locked(pll_rstn),    // output locked
+        .clk_in1(ddr_ui_clk)  // input clk_in1
+    );
+
+    assign pad_cpu_rst_b = pll_rstn & vio_top_rst;
+
+    VIO_Top u_vio_ctrl (
+        .clk(l_pad_clk),
+        .probe_in0(vio_top_rst),
+        .probe_out0(vio_top_rst)
+    );
+
+    always @(posedge l_pad_clk)
+    begin
+        pref_enable <= 1'b1;
+        cache_enable <= 1'b1;
+    end
+`endif

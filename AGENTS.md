@@ -34,6 +34,8 @@ The directory layout below is mandatory for all future work:
 ```text
 noc-input-buffer/
 ├── src/          # SystemVerilog design/RTL files only
+│   └── board_ila/ # Reserved board-level ILA/debug RTL; no generated Vivado files
+├── constraints/  # Board-specific XDC constraints and their documentation
 ├── testbench/    # All SystemVerilog testbench files
 ├── scripts/
 │   ├── simulation/ # All existing simulation, compile-check, and plotting scripts
@@ -44,6 +46,8 @@ noc-input-buffer/
 ```
 
 - Put synthesizable/design `.sv` files in `src/`. Do not place testbench files, scripts, logs, waveforms, or generated Vivado data there.
+- `src/board_ila/` is reserved for the planned board-level NoC/ILA RTL. It is intentionally empty as of 2026-08-03; do not put XDC, IP outputs, logs, or bitstreams in it.//Modify reserve isolated board-level ILA RTL directory, Michael Tan, 20260803
+- Put board-specific XDC files under `constraints/<board-model>/`. The `constraints/` directory was created on 2026-08-03, but no XDC may be added until the actual board model or its official constraints are available.//Modify reserve board-constraint directory for planned ILA bring-up, Michael Tan, 20260803
 - Put every testbench `.sv` file in the top-level `testbench/` directory. Do not recreate `src/tb/`, `test/tb/`, or another nested tb directory.
 - Put simulation, compile-check, and result-plotting scripts in `scripts/simulation/`. Put Windows Vivado synthesis scripts in `scripts/synthesis/`.
 - When the script layout changes in the Linux working copy, synchronize `scripts/` to the Windows working copy `E:\Codex-Project\NoC-XY\scripts\` before running Windows Vivado. On 2026-07-29, the Windows scripts were mirrored from Linux: obsolete root-level simulation scripts were removed, and `simulation/` plus `synthesis/` now match the Linux contents.//Modify record Windows script-layout synchronization, Michael Tan, 20260729
@@ -110,12 +114,24 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - There is no pending code change implied solely by this document. Confirm the user's next requested experiment before modifying RTL or creating another tb.
 - The WSL/Linux Vivado 2025.2 baseline flow is now reproducible through `scripts/simulation/run_tb_mesh.sh`; the verified baseline output is under `vivado_sim_wsl/tb_mesh_sim/`. Historical Windows results remain useful reference data.
 
+## Planned Board Bring-Up Baseline 2026-08-03
+
+- This is a multi-stage NoC board/ILA task; do not treat the current planning state as a request to finish all board work in one change.//Modify record persistent board bring-up baseline, Michael Tan, 20260803
+- Target FPGA is `xcvu440-flga2892-2-e`. Build, implementation, and bitstream generation must continue to use the licensed Windows Vivado 2019.2 installation; Vivado 2022 Hardware Manager is planned only for direct JTAG programming and ILA observation of the generated `.bit`/matching `.ltx` pair.
+- Initial board validation uses direct Vivado JTAG download only. Do not add SD, Flash boot, DDR, SPI, UART, or the SoC's user JTAG interfaces unless the user explicitly expands scope. The JTAG-loaded configuration is volatile and is expected to be reloaded after power loss.
+- Board-clock evidence is stored under `constraints/soc_dcpu_j2/`: the 100 MHz differential clock is `l_pad_clk_p/n` on `AT49/AU49` with `DIFF_SSTL12`; active-low reset is `l_pad_rst_b` on `R12` with `LVCMOS18`.
+- The SoC reference confirms an `IBUFDS` differential receiver but its subsequent clock/reset path depends on DDR MIG (`ddr_ui_clk`/`ddr_ui_rst`). The DDR-free NoC top must instead use `l_pad_clk_p/n -> IBUFDS -> BUFG -> 100 MHz noc_clk` plus a reset synchronizer driven by `l_pad_rst_b`.
+- Planned first hardware workload: a synthesizable 5x5, 4-VC, 4-flit, source-queued traffic generator at per-node packet-generation probability 0.1, followed by a synthesizable monitor measuring source-queue entry to TAIL arrival. ILA observes the counters and selected per-packet signals; it does not require external XDC probe pins.
+- The reference simulation result for the uniform random 4-VC, 4-flit, 0.1 point is in `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_results.txt`: 2545 measured packets received, zero queue-full/errors, and average latency `22.565` cycles. Hardware must use an LFSR/PRNG, so comparable statistics are required but cycle-by-cycle equality is not.
+
 ## Current Important Files
 
 - `src/noc.sv`: global NoC parameters and flit type definitions.
 - `src/mesh.sv`: parameterized mesh generation.
 - `src/input_port_Xiugai2.sv`: contains the VC/crossbar selection fix.
 - `src/circular_buffer_Xiugai3.sv`: contains the Vivado declaration-order fix.
+- `constraints/soc_dcpu_j2/soc_dcpu_j2.xdc`: photo-transcribed board constraints for the planned board/ILA work; includes a 100 MHz differential clock on AT49/AU49 and reset on R12, but is not yet integrated with a board top.
+- `constraints/soc_dcpu_j2/soc_mult_cpu_top_port_reference.v.txt`: photo-transcribed, non-compilable SoC top-port and clock/reset reference. It confirms the XDC clock/reset names use lowercase `l_pad_*`/`o_pad_*`, and records `IBUFDS` use for the differential clock. The original post-IBUFDS clock path depends on DDR MIG outputs and must not be copied into the DDR-free NoC top.//Modify record photo-transcribed board clock/reset top reference, Michael Tan, 20260803
 - `testbench/`: all testbench files.
 - `testbench/tb_mesh_injection_sweep.sv`: current injection-rate sweep testbench.
 - `scripts/simulation/run_tb_mesh.ps1`: main Vivado command-line simulation script.
