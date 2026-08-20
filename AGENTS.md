@@ -200,6 +200,21 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 
 //Modify record completed synthesizable board latency-monitor step, Michael Tan, 20260817
 
+## Active Task Started 2026-08-20: Latency-Monitor Waveform Debug Signals
+
+- Add stable, synthesizable per-TAIL debug registers to the latency monitor and board top so Vivado WDB/next-step ILA can directly observe the matched packet ID, source ID, sequence, enqueue timestamp, current cycle, and calculated single-packet latency.
+- Retain a one-cycle `tail_event` pulse; when multiple TAILs arrive in one cycle, the debug registers retain the last matching TAIL in the monitor's deterministic x/y scan order.
+
+//Modify record start of latency-monitor waveform-debug task, Michael Tan, 20260820
+
+## Completed 2026-08-20: Latency-Monitor Waveform Debug Signals
+
+- Updated `src/board_ila/noc_board_latency_monitor.sv` to retain the most recent matched-TAIL calculation in stable registers: `debug_tail_event_o`, packet ID, source ID, sequence, enqueue cycle, current cycle, and `debug_last_packet_latency_o`. The exact relation is `debug_last_packet_latency_o = debug_current_cycle_o - debug_enqueue_cycle_o` whenever `debug_tail_event_o` is high.
+- Updated `src/board_ila/noc_board_ila_top.sv` to expose those signals as `monitor_debug_*` internal nets with `MARK_DEBUG`/`KEEP`, ready for Vivado WDB and the later ILA step. Updated `testbench/tb_noc_board_latency_monitor.sv` to assert the displayed subtraction and require at least one debug event.
+- Verified with `bash scripts/simulation/run_tb_noc_board_latency_monitor.sh` using Linux Vivado 2025.2 outside the Codex sandbox. The regenerated WDB is `vivado_sim_wsl/tb_noc_board_latency_monitor_sim/tb_noc_board_latency_monitor_sim.wdb`; `xsim.log` reports `[TB_BOARD_MONITOR] PASSED enqueued=2867 tails=2232 unmatched=0 overwrites=0 total_latency=393419 mesh_errors=0`. The new debug self-check passed.
+
+//Modify record completed latency-monitor waveform-debug task, Michael Tan, 20260820
+
 ## Completed Work
 
 1. Modified input buffer related logic so continuous packet injection can work.

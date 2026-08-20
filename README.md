@@ -109,6 +109,20 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 
 <!-- Modify record completed synthesizable board latency-monitor step, Michael Tan, 20260817 -->
 
+## 2026-08-20 延迟计算波形可观测性
+
+- 为便于 Vivado WDB 和后续 ILA 直接查看单包延迟计算，本步骤将为延迟监控器及板级顶层增加稳定调试寄存器：TAIL 匹配事件、包 ID、源节点 ID、源内序号、入队时间戳、当前周期和本次计算的延迟周期数。
+- `tail_event` 为单周期脉冲；如同一周期内出现多个匹配 TAIL，调试寄存器按监控器既有 x/y 扫描顺序保留最后一个匹配项，不改变累计统计结果。
+
+<!-- Modify record start of latency-monitor waveform-debug task, Michael Tan, 20260820 -->
+
+## 2026-08-20 延迟计算调试信号完成与验证
+
+- 已更新 `src/board_ila/noc_board_latency_monitor.sv`、`src/board_ila/noc_board_ila_top.sv` 和 `testbench/tb_noc_board_latency_monitor.sv`。顶层可直接加入波形窗口的信号为：`monitor_debug_tail_event`、`monitor_debug_tail_packet_id`、`monitor_debug_tail_source_id`、`monitor_debug_tail_sequence`、`monitor_debug_enqueue_cycle`、`monitor_debug_current_cycle`、`monitor_debug_last_packet_latency`；其中事件为 1 时满足：`last_packet_latency = current_cycle - enqueue_cycle`。这些顶层信号带有 `MARK_DEBUG`/`KEEP`，也可复用于后续 ILA。
+- 使用 Linux Vivado 2025.2 运行 `bash scripts/simulation/run_tb_noc_board_latency_monitor.sh` 验证通过；重新生成的波形数据库是 `vivado_sim_wsl/tb_noc_board_latency_monitor_sim/tb_noc_board_latency_monitor_sim.wdb`。`xsim.log` 结果仍为 `PASSED enqueued=2867 tails=2232 unmatched=0 overwrites=0 total_latency=393419 mesh_errors=0`，tb 同时检查了新增信号的减法关系。
+
+<!-- Modify record completed latency-monitor waveform-debug task, Michael Tan, 20260820 -->
+
 ## 标准目录结构
 
 以后新增或修改文件时，统一遵守下面的结构：

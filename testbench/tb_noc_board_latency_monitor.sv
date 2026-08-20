@@ -10,6 +10,7 @@ module tb_noc_board_latency_monitor;
     logic l_pad_clk_n;
     logic l_pad_rst_b;
     int error_count;
+    int debug_tail_event_count;
 
     noc_board_ila_top dut (
         .l_pad_clk_p(l_pad_clk_p),
@@ -35,11 +36,21 @@ module tb_noc_board_latency_monitor;
         end
     end
 
+    //Modify check the stable debug registers after the monitor updates on each clock edge, Michael Tan, 20260820
+    always @(negedge dut.noc_clk) begin
+        if (!dut.noc_rst && dut.monitor_debug_tail_event) begin
+            debug_tail_event_count++;
+            if (dut.monitor_debug_last_packet_latency != (dut.monitor_debug_current_cycle - dut.monitor_debug_enqueue_cycle))
+                $fatal(1, "[TB_BOARD_MONITOR] debug latency operands do not match the reported packet latency");
+        end
+    end
+
     initial begin
         l_pad_clk_p = 1'b0;
         l_pad_clk_n = 1'b1;
         l_pad_rst_b = 1'b0;
         error_count = 0;
+        debug_tail_event_count = 0;
 
         repeat (4) @(posedge l_pad_clk_p);
         l_pad_rst_b = 1'b1;
@@ -57,6 +68,8 @@ module tb_noc_board_latency_monitor;
             $fatal(1, "[TB_BOARD_MONITOR] timestamp overwrite count=%0d", dut.monitor_timestamp_overwrites);//Modify require the bounded packet-ID timestamp table not to wrap during verification, Michael Tan, 20260817
         if (dut.monitor_total_latency_cycles == 0)
             $fatal(1, "[TB_BOARD_MONITOR] latency accumulation did not advance");//Modify require nonzero measured latency, Michael Tan, 20260817
+        if (debug_tail_event_count == 0)
+            $fatal(1, "[TB_BOARD_MONITOR] no matched-TAIL latency debug event was observed");//Modify require the new stable per-TAIL latency waveform registers to toggle, Michael Tan, 20260820
         if (error_count != 0)
             $fatal(1, "[TB_BOARD_MONITOR] mesh reported %0d error bits", error_count);//Modify retain error-free NoC requirement, Michael Tan, 20260817
 

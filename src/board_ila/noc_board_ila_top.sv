@@ -55,6 +55,13 @@ module noc_board_ila_top (
     logic [31:0] monitor_unmatched_tails;
     logic [31:0] monitor_timestamp_overwrites;
     logic [63:0] monitor_total_latency_cycles;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic monitor_debug_tail_event;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [HEAD_PAYLOAD_SIZE-1:0] monitor_debug_tail_packet_id;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [$clog2(MESH_SIZE_X * MESH_SIZE_Y)-1:0] monitor_debug_tail_source_id;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [HEAD_PAYLOAD_SIZE-$clog2(MESH_SIZE_X * MESH_SIZE_Y)-1:0] monitor_debug_tail_sequence;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [31:0] monitor_debug_enqueue_cycle;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [31:0] monitor_debug_current_cycle;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [31:0] monitor_debug_last_packet_latency;//Modify retain per-TAIL latency operands/results at board-top scope for WDB and later ILA, Michael Tan, 20260820
 
     //Modify keep the downstream local sinks always available during traffic-generator bring-up, Michael Tan, 20260805
     assign local_on_off_i = '1;
@@ -112,7 +119,14 @@ module noc_board_ila_top (
         .tails_received_o(monitor_tails_received),
         .unmatched_tails_o(monitor_unmatched_tails),
         .timestamp_overwrites_o(monitor_timestamp_overwrites),
-        .total_latency_cycles_o(monitor_total_latency_cycles)
+        .total_latency_cycles_o(monitor_total_latency_cycles),
+        .debug_tail_event_o(monitor_debug_tail_event),
+        .debug_tail_packet_id_o(monitor_debug_tail_packet_id),
+        .debug_tail_source_id_o(monitor_debug_tail_source_id),
+        .debug_tail_sequence_o(monitor_debug_tail_sequence),
+        .debug_enqueue_cycle_o(monitor_debug_enqueue_cycle),
+        .debug_current_cycle_o(monitor_debug_current_cycle),
+        .debug_last_packet_latency_o(monitor_debug_last_packet_latency)
     );
 
 endmodule

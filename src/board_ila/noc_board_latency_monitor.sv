@@ -17,7 +17,14 @@ module noc_board_latency_monitor #(
     output logic [COUNTER_WIDTH-1:0] tails_received_o,
     output logic [COUNTER_WIDTH-1:0] unmatched_tails_o,
     output logic [COUNTER_WIDTH-1:0] timestamp_overwrites_o,
-    output logic [2*COUNTER_WIDTH-1:0] total_latency_cycles_o
+    output logic [2*COUNTER_WIDTH-1:0] total_latency_cycles_o,
+    output logic debug_tail_event_o,
+    output logic [HEAD_PAYLOAD_SIZE-1:0] debug_tail_packet_id_o,
+    output logic [$clog2(MESH_SIZE_X * MESH_SIZE_Y)-1:0] debug_tail_source_id_o,
+    output logic [HEAD_PAYLOAD_SIZE-$clog2(MESH_SIZE_X * MESH_SIZE_Y)-1:0] debug_tail_sequence_o,
+    output logic [COUNTER_WIDTH-1:0] debug_enqueue_cycle_o,
+    output logic [COUNTER_WIDTH-1:0] debug_current_cycle_o,
+    output logic [COUNTER_WIDTH-1:0] debug_last_packet_latency_o
 );
 
     localparam SOURCE_COUNT = MESH_SIZE_X * MESH_SIZE_Y;
@@ -47,6 +54,13 @@ module noc_board_latency_monitor #(
             unmatched_tails_o <= '0;
             timestamp_overwrites_o <= '0;
             total_latency_cycles_o <= '0;
+            debug_tail_event_o <= 1'b0;//Modify clear the one-cycle matched-TAIL debug event during reset, Michael Tan, 20260820
+            debug_tail_packet_id_o <= '0;
+            debug_tail_source_id_o <= '0;
+            debug_tail_sequence_o <= '0;
+            debug_enqueue_cycle_o <= '0;
+            debug_current_cycle_o <= '0;
+            debug_last_packet_latency_o <= '0;
             for (int source = 0; source < SOURCE_COUNT; source++) begin
                 for (int sequence_index = 0; sequence_index < TRACK_TABLE_DEPTH; sequence_index++) begin
                     entry_valid[source][sequence_index] <= 1'b0;//Modify invalidate all timestamp slots during board reset, Michael Tan, 20260817
@@ -59,6 +73,8 @@ module noc_board_latency_monitor #(
             unmatched_increment = 0;
             overwrite_increment = 0;
             latency_increment = '0;
+            debug_tail_event_o <= 1'b0;//Modify make every matched-TAIL indication a one-cycle waveform/ILA pulse, Michael Tan, 20260820
+            debug_current_cycle_o <= cycle_counter;//Modify retain the cycle value used by this clock edge's latency calculation, Michael Tan, 20260820
 
             for (int x = 0; x < MESH_SIZE_X; x++) begin
                 for (int y = 0; y < MESH_SIZE_Y; y++) begin
@@ -78,6 +94,12 @@ module noc_board_latency_monitor #(
                             entry_valid[tail_source_id][tail_sequence] <= 1'b0;
                             latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_sequence]);
                             tail_increment = tail_increment + 1;
+                            debug_tail_event_o <= 1'b1;//Modify expose a matched TAIL event for direct latency waveform correlation, Michael Tan, 20260820
+                            debug_tail_packet_id_o <= tail_packet_id;
+                            debug_tail_source_id_o <= tail_source_id;
+                            debug_tail_sequence_o <= tail_sequence;
+                            debug_enqueue_cycle_o <= enqueue_cycle[tail_source_id][tail_sequence];
+                            debug_last_packet_latency_o <= cycle_counter - enqueue_cycle[tail_source_id][tail_sequence];//Modify retain the exact per-packet latency added to the aggregate counter, Michael Tan, 20260820
                         end else begin
                             unmatched_increment = unmatched_increment + 1;//Modify retain unmatched-Tail evidence instead of silently corrupting latency statistics, Michael Tan, 20260817
                         end
