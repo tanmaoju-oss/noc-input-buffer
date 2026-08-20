@@ -36,6 +36,12 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 当前已增加并验证 WSL/Linux Bash 入口 `scripts/simulation/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
 
+## 周报与工作计划记录规则
+
+当需要编写周报或下周工作计划时，统一使用 `file/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。
+
+<!-- Modify add weekly-plan format and党建融资 coverage rule, Michael Tan, 20260807 -->
+
 ## 2026-08-03 上板与 ILA 长期工作基线
 
 本项目的 NoC 上板/ILA 工作将分阶段完成，不要求在一次修改中完成所有 RTL、综合和实机验证。首版范围固定为无 DDR 的 NoC 调试工程：不使用 SD 卡、Flash、DDR、SPI、UART 或原 SoC 的用户 JTAG 接口。
@@ -49,6 +55,59 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 - 仿真参考点：`vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_results.txt` 中 0.1 点为 2545 个测量包全部接收、无队列满/错误、平均延迟 22.565 cycles。硬件使用 LFSR，要求统计口径可比，不要求逐周期完全相同。
 
 <!-- Modify record persistent board bring-up and direct-JTAG ILA baseline, Michael Tan, 20260803 -->
+
+## 2026-08-04 上板第一步：独立顶层
+
+- 本步骤新建 `constraints/noc_board_ila/`，作为新的无 DDR NoC 上板工程约束目录；`constraints/soc_dcpu_j2/soc_dcpu_j2.xdc` 保持只读参考，不修改、不直接用于新工程。
+- 首版板级顶层将放入 `src/board_ila/`，仅实现已确认的差分时钟接收、复位同步和 5×5 NoC 接入。流量发生器、监控器、ILA、专用 XDC、实现和上板验证均为后续步骤。
+
+<!-- Modify record start of isolated DDR-free board top task, Michael Tan, 20260804 -->
+
+## 2026-08-04 上板第一步完成：无 DDR 顶层
+
+- 新增 `src/board_ila/noc_board_ila_top.sv`：顶层仅含 `l_pad_clk_p`、`l_pad_clk_n`、`l_pad_rst_b` 三个端口；通过 `IBUFDS → BUFG` 生成内部 `noc_clk`，以两级同步器释放内部复位，并接入静默的 5×5、4VC `mesh`。
+- 新增 `constraints/noc_board_ila/constraints.md`，使新约束目录可独立保留。原 `constraints/soc_dcpu_j2/` 文件未修改，继续只作为 SoC/DDR 相关参考；本步骤没有创建或接入 XDC。
+- 已用 Linux Vivado 2025.2 在临时目录完成 `xvlog --sv --relax` 编译及 `xelab -L unisims_ver` 展开，顶层无错误。未运行仿真，未做 Windows 综合、实现、位流或实机下载。
+
+<!-- Modify record completed first DDR-free board top implementation and compile check, Michael Tan, 20260804 -->
+
+## 2026-08-05 上板第二步：可综合流量发生器
+
+- 本步骤在 `src/board_ila/` 增加独立、可综合的源端排队随机流量发生器，并接入已完成的无 DDR 顶层；范围不包括延迟监控器、ILA、XDC、Windows 综合实现、位流或上板下载。
+- 发生器固定为 5×5、4VC NoC 的 4-flit packet，所有节点使用独立非零 16-bit LFSR；每周期的生成门限为 `6554/65536`（约 0.1），目的节点保证不等于源节点。源端 FIFO 深度为 64，入口使用 VC0，NoC 内部仍保持 4VC 配置。
+
+<!-- Modify record start of synthesizable board traffic-generator step, Michael Tan, 20260805 -->
+
+## 2026-08-05 上板第二步完成：流量发生器与验证
+
+- 新增 `src/board_ila/noc_board_traffic_generator.sv`，并将其接入 `src/board_ila/noc_board_ila_top.sv`。每个 5×5 节点独立使用非零 16-bit LFSR 和 64 项源端队列；产生非自身目的节点的 `HEAD/BODY/BODY/TAIL` 四 flit 包，经 VC0 注入。生成门限为 `6554/65536`，即每节点每周期约 0.1 packet；NoC 内部仍为 4VC。
+- 新增 `testbench/tb_noc_board_traffic_generator.sv` 与 `scripts/simulation/run_tb_noc_board_traffic_generator.sh`。使用 Linux Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_traffic_generator.sh`；因 xsim 沙箱快照加载限制，在允许的沙箱外重跑后通过。结果见 `vivado_sim_wsl/tb_noc_board_traffic_generator_sim/xsim.log`：1000 个时钟周期接收 8970 个 flit，`errors=0`。
+- 本步骤未加入延迟监控器、ILA、XDC、Windows 综合/实现、位流或实机下载；下一步单独实现从源队列入队到 TAIL 到达的可综合监控器。
+
+<!-- Modify record completed synthesizable board traffic-generator step, Michael Tan, 20260805 -->
+
+## 2026-08-17 上板第三步：源队列到 TAIL 延迟监控器
+
+- 本步骤将在 `src/board_ila/` 新增加可综合监控器：源端 packet 进入源队列时记录周期计数，在目的端收到对应 TAIL 时累加端到端延迟，并保留入队数、TAIL 到达数、未匹配 TAIL 数与累计延迟等计数器，供后续 ILA 连接。
+- 为让 25 个源节点的包可唯一匹配，16 位 packet ID 将固定划分为 5 位源节点编号和 11 位源内序号；本步还会新建独立 tb、WSL/Linux 仿真入口及结果目录验证该统计链路。
+- 范围仍不包含 ILA IP、XDC、Windows 综合/实现、位流或实机下载。
+
+<!-- Modify record start of synthesizable board latency-monitor step, Michael Tan, 20260817 -->
+
+## 2026-08-17 上板第三步完成：可综合延迟监控与验证
+
+- 新增 `src/board_ila/noc_board_latency_monitor.sv`，并接入 `src/board_ila/noc_board_ila_top.sv`。监控器在 packet 成功进入源端队列时记下周期，在目的节点输出对应 TAIL 时匹配并累计延迟；顶层保留 `monitor_packets_enqueued`、`monitor_tails_received`、`monitor_unmatched_tails`、`monitor_timestamp_overwrites`、`monitor_total_latency_cycles` 五个内部计数器，供下一步 ILA 直接观察。其中覆盖计数器会在旧 packet 尚未到达 TAIL 时其 ID 时间戳槽被复用时置数，避免静默统计失真。
+- 更新 `src/board_ila/noc_board_traffic_generator.sv` 的既有 16 位 packet ID 编码：高 5 位为 5×5 源节点编号，低 11 位为该源节点的递增序号。BODY/TAIL 中沿用该 ID，因此不改变路由目的字段，也能避免多源 packet 误匹配。
+- 新增 `testbench/tb_noc_board_latency_monitor.sv` 与 `scripts/simulation/run_tb_noc_board_latency_monitor.sh`。执行命令为：
+
+```bash
+bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
+```
+
+- Linux Vivado 2025.2 的沙箱内 xsim 首先出现已知 Tcl 快照加载异常；在允许的沙箱外重跑后通过。结果目录为 `vivado_sim_wsl/tb_noc_board_latency_monitor_sim/`，其中 `xsim.log` 记录：`[TB_BOARD_MONITOR] PASSED enqueued=2867 tails=2232 unmatched=0 overwrites=0 total_latency=393419 mesh_errors=0`。这表明有 2232 个 TAIL 被正确匹配，未匹配数、时间戳覆盖数和 NoC 错误均为 0；剩余入队包仍在网络或源队列中，符合持续注入的 1000 周期测试。
+- 本步没有加入 ILA IP、XDC、Windows 综合/实现、位流或实机下载。下一步才是将这些计数器及所需调试信号接入 ILA。
+
+<!-- Modify record completed synthesizable board latency-monitor step, Michael Tan, 20260817 -->
 
 ## 标准目录结构
 
@@ -71,7 +130,7 @@ noc-input-buffer/
 具体规则：
 
 - `src/` 只放项目设计代码，不放 tb、脚本、日志、波形或 Vivado 生成文件。
-- `src/board_ila/` 已于 2026-08-03 创建，预留给后续上板 NoC/ILA 调试 RTL；当前为空，不存放 XDC、IP 生成物、日志或位流。//Modify reserve isolated board-level ILA RTL directory, Michael Tan, 20260803
+- `src/board_ila/` 存放无 DDR 的上板 NoC/ILA RTL；当前已包含首版 `noc_board_ila_top.sv`，不存放 XDC、IP 生成物、日志或位流。//Modify add first DDR-free board top, Michael Tan, 20260804
 - `constraints/` 已于 2026-08-03 创建；后续从官方工程取得 XDC 后，按 `constraints/<开发板型号>/` 存放。未确认实际开发板及其官方约束前，不自行填写具体管脚号。//Modify reserve board-constraint directory for planned ILA bring-up, Michael Tan, 20260803
 - 所有 tb 文件直接放在顶层 `testbench/`，不要再创建 `src/tb/`、`test/tb/` 等目录。
 - 仿真、编译检查和结果绘图脚本统一放在 `scripts/simulation/`；Windows Vivado 综合脚本统一放在 `scripts/synthesis/`。
@@ -134,6 +193,8 @@ git status --short
 - `vivado_sim_wsl/`：WSL/Linux Vivado 仿真结果；当前已包含通过验证的 `tb_mesh_sim/` 基础结果。
 - `constraints/soc_dcpu_j2/soc_dcpu_j2.xdc`：根据提供的 XDC 照片转写的板级约束；已确认 100 MHz 差分时钟为 `AT49/AU49`、低有效复位为 `R12`。端口前缀为小写字母 `l_pad_*`/`o_pad_*`，不是数字。照片在 DDR 标题处截断，未转写任何 DDR 管脚；该文件尚未接入新的板级顶层。
 - `constraints/soc_dcpu_j2/soc_mult_cpu_top_port_reference.v.txt`：根据照片转写的 SoC 顶层端口与时钟参考片段，确认差分时钟通过 `IBUFDS` 接收；原 SoC 后续时钟生成依赖 DDR MIG 的 `ddr_ui_clk/ddr_ui_rst`，不能用于本项目的无 DDR 顶层。该文件不能参与本项目编译。//Modify record photo-transcribed board clock/reset top reference, Michael Tan, 20260803
+- `constraints/noc_board_ila/constraints.md`：新的无 DDR NoC 上板约束目录说明。原 `soc_dcpu_j2` 文件保持参考性质；当前尚未新建 XDC。
+- `src/board_ila/noc_board_ila_top.sv`：首版无 DDR 板级顶层，含差分时钟接收、复位同步和静默的 5×5/4VC NoC 实例。
 - `project_*`：迁移过来的 Vivado 工程目录。
 - `buffer/`：早期 input buffer 相关代码和分析材料；当前工作区内该目录已有删除项，处理前先看 Git 状态。
 - `kpi/`：报告与绩效材料，不是当前 NoC RTL 主线。

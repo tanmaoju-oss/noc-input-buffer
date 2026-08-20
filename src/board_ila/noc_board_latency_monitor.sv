@@ -1,0 +1,96 @@
+import noc_params::*;
+
+//Modify add synthesizable source-queue-entry to TAIL-arrival latency monitor for board step 3, Michael Tan, 20260817
+module noc_board_latency_monitor #(
+    parameter MESH_SIZE_X = noc_params::MESH_SIZE_X,
+    parameter MESH_SIZE_Y = noc_params::MESH_SIZE_Y,
+    parameter PACKET_FLIT_NUM = 4,
+    parameter COUNTER_WIDTH = 32
+) (
+    input logic clk,
+    input logic rst,
+    input logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_enqueued_i,
+    input logic [HEAD_PAYLOAD_SIZE-1:0] enqueued_packet_id_i [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0],
+    input flit_t [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_data_i,
+    input logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_valid_i,
+    output logic [COUNTER_WIDTH-1:0] packets_enqueued_o,
+    output logic [COUNTER_WIDTH-1:0] tails_received_o,
+    output logic [COUNTER_WIDTH-1:0] unmatched_tails_o,
+    output logic [COUNTER_WIDTH-1:0] timestamp_overwrites_o,
+    output logic [2*COUNTER_WIDTH-1:0] total_latency_cycles_o
+);
+
+    localparam SOURCE_COUNT = MESH_SIZE_X * MESH_SIZE_Y;
+    localparam SOURCE_ID_WIDTH = $clog2(SOURCE_COUNT);
+    localparam PACKET_SEQUENCE_WIDTH = HEAD_PAYLOAD_SIZE - SOURCE_ID_WIDTH;
+    localparam TRACK_TABLE_DEPTH = 1 << PACKET_SEQUENCE_WIDTH;
+    localparam FLIT_INDEX_WIDTH = $clog2(PACKET_FLIT_NUM);
+
+    logic [COUNTER_WIDTH-1:0] cycle_counter;
+    logic [COUNTER_WIDTH-1:0] enqueue_cycle [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
+    logic entry_valid [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
+
+    always_ff @(posedge clk) begin : latency_measurement
+        integer enqueue_increment;
+        integer tail_increment;
+        integer unmatched_increment;
+        integer overwrite_increment;
+        logic [2*COUNTER_WIDTH-1:0] latency_increment;
+        logic [HEAD_PAYLOAD_SIZE-1:0] tail_packet_id;
+        logic [SOURCE_ID_WIDTH-1:0] tail_source_id;
+        logic [PACKET_SEQUENCE_WIDTH-1:0] tail_sequence;
+
+        if (rst) begin
+            cycle_counter <= '0;
+            packets_enqueued_o <= '0;
+            tails_received_o <= '0;
+            unmatched_tails_o <= '0;
+            timestamp_overwrites_o <= '0;
+            total_latency_cycles_o <= '0;
+            for (int source = 0; source < SOURCE_COUNT; source++) begin
+                for (int sequence_index = 0; sequence_index < TRACK_TABLE_DEPTH; sequence_index++) begin
+                    entry_valid[source][sequence_index] <= 1'b0;//Modify invalidate all timestamp slots during board reset, Michael Tan, 20260817
+                end
+            end
+        end else begin
+            cycle_counter <= cycle_counter + 1'b1;
+            enqueue_increment = 0;
+            tail_increment = 0;
+            unmatched_increment = 0;
+            overwrite_increment = 0;
+            latency_increment = '0;
+
+            for (int x = 0; x < MESH_SIZE_X; x++) begin
+                for (int y = 0; y < MESH_SIZE_Y; y++) begin
+                    if (packet_enqueued_i[x][y]) begin
+                        if (entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]])
+                            overwrite_increment = overwrite_increment + 1;//Modify flag timestamp-table reuse before an older same-ID packet reached TAIL, Michael Tan, 20260817
+                        entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= 1'b1;//Modify timestamp every accepted source-queue entry by its encoded source and sequence, Michael Tan, 20260817
+                        enqueue_cycle[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= cycle_counter;
+                        enqueue_increment = enqueue_increment + 1;
+                    end
+
+                    if (local_valid_i[x][y] && (local_data_i[x][y].flit_label == TAIL)) begin
+                        tail_packet_id = local_data_i[x][y].data.bt_pl[FLIT_INDEX_WIDTH +: HEAD_PAYLOAD_SIZE];
+                        tail_source_id = tail_packet_id[HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH];
+                        tail_sequence = tail_packet_id[PACKET_SEQUENCE_WIDTH-1:0];
+                        if ((tail_source_id < SOURCE_COUNT) && entry_valid[tail_source_id][tail_sequence]) begin
+                            entry_valid[tail_source_id][tail_sequence] <= 1'b0;
+                            latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_sequence]);
+                            tail_increment = tail_increment + 1;
+                        end else begin
+                            unmatched_increment = unmatched_increment + 1;//Modify retain unmatched-Tail evidence instead of silently corrupting latency statistics, Michael Tan, 20260817
+                        end
+                    end
+                end
+            end
+
+            packets_enqueued_o <= packets_enqueued_o + enqueue_increment;
+            tails_received_o <= tails_received_o + tail_increment;
+            unmatched_tails_o <= unmatched_tails_o + unmatched_increment;
+            timestamp_overwrites_o <= timestamp_overwrites_o + overwrite_increment;
+            total_latency_cycles_o <= total_latency_cycles_o + latency_increment;
+        end
+    end
+
+endmodule

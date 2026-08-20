@@ -46,7 +46,7 @@ noc-input-buffer/
 ```
 
 - Put synthesizable/design `.sv` files in `src/`. Do not place testbench files, scripts, logs, waveforms, or generated Vivado data there.
-- `src/board_ila/` is reserved for the planned board-level NoC/ILA RTL. It is intentionally empty as of 2026-08-03; do not put XDC, IP outputs, logs, or bitstreams in it.//Modify reserve isolated board-level ILA RTL directory, Michael Tan, 20260803
+- `src/board_ila/` contains the DDR-free board-level NoC/ILA RTL. Do not put XDC, IP outputs, logs, or bitstreams in it.//Modify add first DDR-free board top, Michael Tan, 20260804
 - Put board-specific XDC files under `constraints/<board-model>/`. The `constraints/` directory was created on 2026-08-03, but no XDC may be added until the actual board model or its official constraints are available.//Modify reserve board-constraint directory for planned ILA bring-up, Michael Tan, 20260803
 - Put every testbench `.sv` file in the top-level `testbench/` directory. Do not recreate `src/tb/`, `test/tb/`, or another nested tb directory.
 - Put simulation, compile-check, and result-plotting scripts in `scripts/simulation/`. Put Windows Vivado synthesis scripts in `scripts/synthesis/`.
@@ -84,6 +84,7 @@ noc-input-buffer/
 ## User Rules
 
 - Reply mainly in concise Chinese.
+- 当用户要求编写周报或下周工作计划时，使用与 `file/2026-08-下周工作计划.txt` 一致的简洁格式：按“周一上午”至“周五下午”逐项列出。除项目研发任务外，默认纳入党建学习/材料整理及公司融资资料整理/沟通等工作安排；如用户提供了具体事项，以用户事项为准。//Modify add weekly-plan format and党建融资 coverage rule, Michael Tan, 20260807
 - Do not modify source files when the user asks only for analysis or says not to modify yet.
 - Before starting any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` when the task changes project state or produces reusable results.//Modify add mandatory memory-sync rule before future code/tb/simulation work, Michael Tan, 20260626
 - After finishing any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` with changed files, run commands, result paths, and important simulation results.//Modify add mandatory post-task documentation rule, Michael Tan, 20260626
@@ -124,6 +125,13 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - Planned first hardware workload: a synthesizable 5x5, 4-VC, 4-flit, source-queued traffic generator at per-node packet-generation probability 0.1, followed by a synthesizable monitor measuring source-queue entry to TAIL arrival. ILA observes the counters and selected per-packet signals; it does not require external XDC probe pins.
 - The reference simulation result for the uniform random 4-VC, 4-flit, 0.1 point is in `vivado_sim_wsl/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_sim/injection_latency_results.txt`: 2545 measured packets received, zero queue-full/errors, and average latency `22.565` cycles. Hardware must use an LFSR/PRNG, so comparable statistics are required but cycle-by-cycle equality is not.
 
+## Active Task Started 2026-08-04: DDR-Free Board Top Step 1
+
+- Create the isolated `constraints/noc_board_ila/` directory. Do not modify or directly reuse `constraints/soc_dcpu_j2/soc_dcpu_j2.xdc`; it remains a read-only SoC/DDR-related reference.
+- Create the first synthesizable board top in `src/board_ila/`. Its scope is limited to the confirmed differential clock, reset synchronization, and 5x5 NoC integration; traffic generation, monitor, ILA, XDC, implementation, and board download remain later steps.
+
+//Modify record start of isolated DDR-free board top task, Michael Tan, 20260804
+
 ## Current Important Files
 
 - `src/noc.sv`: global NoC parameters and flit type definitions.
@@ -132,6 +140,14 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - `src/circular_buffer_Xiugai3.sv`: contains the Vivado declaration-order fix.
 - `constraints/soc_dcpu_j2/soc_dcpu_j2.xdc`: photo-transcribed board constraints for the planned board/ILA work; includes a 100 MHz differential clock on AT49/AU49 and reset on R12, but is not yet integrated with a board top.
 - `constraints/soc_dcpu_j2/soc_mult_cpu_top_port_reference.v.txt`: photo-transcribed, non-compilable SoC top-port and clock/reset reference. It confirms the XDC clock/reset names use lowercase `l_pad_*`/`o_pad_*`, and records `IBUFDS` use for the differential clock. The original post-IBUFDS clock path depends on DDR MIG outputs and must not be copied into the DDR-free NoC top.//Modify record photo-transcribed board clock/reset top reference, Michael Tan, 20260803
+- `constraints/noc_board_ila/constraints.md`: isolated DDR-free NoC board-constraint directory description; no new XDC has been created yet.
+- `src/board_ila/noc_board_ila_top.sv`: DDR-free board top with `IBUFDS -> BUFG`, reset synchronization, 5x5/four-VC `mesh`, and the step-2 traffic-generator integration.
+- `src/board_ila/noc_board_traffic_generator.sv`: synthesizable 5x5 source-queued LFSR random traffic generator for board step 2.
+- `src/board_ila/noc_board_latency_monitor.sv`: synthesizable source-queue-entry to TAIL-arrival timestamp monitor for board step 3.
+- `testbench/tb_noc_board_traffic_generator.sv`: board step 2 integration verification tb.
+- `scripts/simulation/run_tb_noc_board_traffic_generator.sh`: WSL/Linux Vivado entry for the board traffic-generator tb.
+- `testbench/tb_noc_board_latency_monitor.sv`: board step 3 monitor integration verification tb.
+- `scripts/simulation/run_tb_noc_board_latency_monitor.sh`: WSL/Linux Vivado entry for the board latency-monitor tb.
 - `testbench/`: all testbench files.
 - `testbench/tb_mesh_injection_sweep.sv`: current injection-rate sweep testbench.
 - `scripts/simulation/run_tb_mesh.ps1`: main Vivado command-line simulation script.
@@ -150,6 +166,39 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 4. Keep the documentation concise; only record reusable state, not temporary exploration noise.
 
 //Modify add explicit documentation synchronization workflow, Michael Tan, 20260626
+
+## Completed 2026-08-04: DDR-Free Board Top Step 1
+
+- Added `constraints/noc_board_ila/constraints.md`; the original `constraints/soc_dcpu_j2/` files are left unchanged and remain reference-only.
+- Added `src/board_ila/noc_board_ila_top.sv`. Its only top-level ports are `l_pad_clk_p`, `l_pad_clk_n`, and `l_pad_rst_b`; it creates `noc_clk` through `IBUFDS` and `BUFG`, synchronizes reset release over two clock cycles, and instantiates the configured 5x5/four-VC `mesh` with idle local inputs.
+- Linux Vivado 2025.2 compile and elaboration were run in a temporary `/tmp/noc_board_ila_compile.*` directory with all RTL sources, `xvlog --sv --relax`, and `xelab -L unisims_ver ... xil_defaultlib.noc_board_ila_top`. Both completed with no errors. Existing `mesh.sv` generate/interface warnings and inherited missing-timescale warnings remain; no simulation, synthesis, XDC, ILA, or bitstream was produced.
+
+//Modify record completed first DDR-free board top implementation and compile check, Michael Tan, 20260804
+
+## Completed 2026-08-05: DDR-Free Board Top Step 2
+
+- Added `src/board_ila/noc_board_traffic_generator.sv` and integrated it into `src/board_ila/noc_board_ila_top.sv`. Every 5x5 node has an independent nonzero 16-bit LFSR, a 64-entry source queue, non-self random destination selection, and four-flit `HEAD/BODY/BODY/TAIL` packet emission through VC0. The generation threshold is `6554/65536`, approximately packet probability 0.1 per node per cycle; the NoC configuration remains four VC.
+- Added `testbench/tb_noc_board_traffic_generator.sv` and `scripts/simulation/run_tb_noc_board_traffic_generator.sh`. Linux Vivado 2025.2 verification was run with `bash scripts/simulation/run_tb_noc_board_traffic_generator.sh`; sandbox xsim snapshot loading first showed the documented unexpected Tcl exception, and the approved outside-sandbox rerun passed. The result log is `vivado_sim_wsl/tb_noc_board_traffic_generator_sim/xsim.log` and reports `[TB_BOARD_TRAFFIC] PASSED received_flits=8970 errors=0` after 1000 clock cycles.
+- No monitor, ILA, XDC, Windows synthesis/implementation, bitstream, or hardware download was created in this step. The next isolated step is the synthesizable source-queue-entry to TAIL-arrival monitor.
+
+//Modify record completed synthesizable board traffic-generator step, Michael Tan, 20260805
+
+## Active Task Started 2026-08-17: DDR-Free Board Top Step 3
+
+- Add a synthesizable monitor under `src/board_ila/` that timestamps each source-queue enqueue and matches the encoded source/sequence packet ID when its TAIL reaches a local destination.
+- Integrate the monitor into `noc_board_ila_top.sv`, expose reusable aggregate counters for later ILA observation, and add a separate WSL/Linux verification tb, runner, and result directory.
+- This isolated step does not add ILA IP, XDC, Windows synthesis/implementation, bitstream generation, or board download.
+
+//Modify record start of synthesizable board latency-monitor step, Michael Tan, 20260817
+
+## Completed 2026-08-17: DDR-Free Board Top Step 3
+
+- Added `src/board_ila/noc_board_latency_monitor.sv` and integrated it into `src/board_ila/noc_board_ila_top.sv`. The monitor timestamps every accepted source-queue entry and matches its four-flit packet TAIL at the local destination, retaining `monitor_packets_enqueued`, `monitor_tails_received`, `monitor_unmatched_tails`, `monitor_timestamp_overwrites`, and `monitor_total_latency_cycles` for the later ILA step. The overwrite counter flags an ID timestamp slot reused before its older packet reaches TAIL.
+- Updated `src/board_ila/noc_board_traffic_generator.sv` so its existing 16-bit packet ID is unique across the 5x5 workload: upper 5 bits encode the source node index and lower 11 bits the source-local sequence. The same ID remains encoded in BODY/TAIL payloads, so no NoC routing fields changed.
+- Added `testbench/tb_noc_board_latency_monitor.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor.sh`. Linux Vivado 2025.2 verification used `bash scripts/simulation/run_tb_noc_board_latency_monitor.sh`; the sandbox run hit the documented xsim Tcl snapshot exception, and the approved outside-sandbox rerun passed. `vivado_sim_wsl/tb_noc_board_latency_monitor_sim/xsim.log` reports `[TB_BOARD_MONITOR] PASSED enqueued=2867 tails=2232 unmatched=0 overwrites=0 total_latency=393419 mesh_errors=0` after 1000 clock cycles. `xvlog.log`, `xelab.log`, and `xsim.log` contain no RTL `ERROR:`, `CRITICAL WARNING`, `$error`, `FAILED`, or `FATAL` records; existing mesh interface/timescale environment warnings remain.
+- No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created. The next isolated board step is ILA integration using these counters and selected packet/debug signals.
+
+//Modify record completed synthesizable board latency-monitor step, Michael Tan, 20260817
 
 ## Completed Work
 
