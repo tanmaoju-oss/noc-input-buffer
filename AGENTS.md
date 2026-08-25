@@ -240,6 +240,11 @@ Fix:
 - Moved `assign first_flit_o = memory[read_ptr]` after `read_ptr` declaration.
 - Reason: Vivado `xvlog` required `read_ptr` to be declared before use.
 
+### circular_buffer unused legacy peek interface cleanup
+
+- On 2026-08-25, commented out the unused `first_flit_o` output port and its matching `memory[read_ptr]` assignment in `src/circular_buffer_Xiugai3.sv`. The sole active FIFO peek interface remains `data_o`, which is the interface used by `input_buffer`.
+- This is an interface cleanup only; no Vivado simulation was run for this documentation/source-only change.//Modify record unused legacy circular-buffer peek cleanup, Michael Tan, 20260825
+
 ### input_port VC selection fix
 
 File:

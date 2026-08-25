@@ -9,7 +9,7 @@ module circular_buffer #(
     input rst,
     input clk,
 
-    output flit_novc_t first_flit_o,//add
+    //output flit_novc_t first_flit_o,//Modify disable unused legacy peek port, Michael Tan, 20260825
 
     output flit_novc_t data_o,
     output logic is_full_o,
@@ -26,7 +26,7 @@ module circular_buffer #(
     logic [POINTER_SIZE-1:0] read_ptr;
     logic [POINTER_SIZE-1:0] write_ptr;
 
-    assign first_flit_o = memory[read_ptr];//Modify after read_ptr declaration for Vivado xvlog, Michael Tan, 20260617
+    //assign first_flit_o = memory[read_ptr];//Modify disable unused legacy peek assignment, Michael Tan, 20260825
 
     logic [POINTER_SIZE-1:0] read_ptr_next;
     logic [POINTER_SIZE-1:0] write_ptr_next;

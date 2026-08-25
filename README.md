@@ -309,6 +309,10 @@ Vivado 编译时，`read_ptr` 在声明前被使用，导致 `xvlog` 报错。
 assign first_flit_o = memory[read_ptr];
 ```
 
+2026-08-25 已将该旧 `first_flit_o` 端口及其赋值注释：当前 `input_buffer` 使用的是 `data_o` 队首输出，旧 peek 接口没有实例连接。本次仅清理未使用接口，未重新运行 Vivado 仿真。
+
+<!-- Modify record unused legacy circular-buffer peek cleanup, Michael Tan, 20260825 -->
+
 ### 2. input_port 输出 flit 和当前 VC 选择不一致
 
 文件：
