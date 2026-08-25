@@ -38,9 +38,16 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 ## 周报与工作计划记录规则
 
-当需要编写周报或下周工作计划时，统一使用 `file/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。
+当需要编写周报或下周工作计划时，统一使用 `file/周报/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。
 
-<!-- Modify add weekly-plan format and党建融资 coverage rule, Michael Tan, 20260807 -->
+<!-- Modify classify weekly-plan records under file/周报, Michael Tan, 20260825 -->
+
+## 文件资料分类
+
+- `file/周报/`：周报和下周工作计划 TXT 文件，仅作为本地工作记录保存，不纳入 Git。
+- `file/代码分析/`：NoC 模块代码分析 Markdown，纳入 Git 以便跨工作副本复用。当前包括环形缓冲区、轮询仲裁器、分离式输入优先仲裁器、VC allocator、input buffer、input port 和 input block 的分析。
+
+<!-- Modify classify local weekly records and tracked code analyses, Michael Tan, 20260825 -->
 
 ## 2026-08-03 上板与 ILA 长期工作基线
 

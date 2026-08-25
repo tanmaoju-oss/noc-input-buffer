@@ -40,8 +40,11 @@ kpi/
 AGENTS.md
 README.md
 
-# Local weekly work records, keep only on this machine
-file/
+# Keep weekly work records local, but track reusable code-analysis Markdown files.
+file/*
+!file/代码分析/
+!file/代码分析/*.md
+# Modify classify file records and track code analyses, Michael Tan, 20260825
 
 # Temporary/editor files
 # Modify ignore generated Python bytecode caches, Michael Tan, 20260729

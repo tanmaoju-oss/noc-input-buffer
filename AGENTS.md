@@ -84,7 +84,7 @@ noc-input-buffer/
 ## User Rules
 
 - Reply mainly in concise Chinese.
-- 当用户要求编写周报或下周工作计划时，使用与 `file/2026-08-下周工作计划.txt` 一致的简洁格式：按“周一上午”至“周五下午”逐项列出。除项目研发任务外，默认纳入党建学习/材料整理及公司融资资料整理/沟通等工作安排；如用户提供了具体事项，以用户事项为准。//Modify add weekly-plan format and党建融资 coverage rule, Michael Tan, 20260807
+- 当用户要求编写周报或下周工作计划时，使用与 `file/周报/2026-08-下周工作计划.txt` 一致的简洁格式：按“周一上午”至“周五下午”逐项列出。除项目研发任务外，默认纳入党建学习/材料整理及公司融资资料整理/沟通等工作安排；如用户提供了具体事项，以用户事项为准。//Modify classify weekly records under file/周报, Michael Tan, 20260825
 - Do not modify source files when the user asks only for analysis or says not to modify yet.
 - Before starting any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` when the task changes project state or produces reusable results.//Modify add mandatory memory-sync rule before future code/tb/simulation work, Michael Tan, 20260626
 - After finishing any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` with changed files, run commands, result paths, and important simulation results.//Modify add mandatory post-task documentation rule, Michael Tan, 20260626
@@ -155,6 +155,8 @@ new_code_here;//Modify ..., Michael Tan, YYYYMMDD
 - `scripts/simulation/run_tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit.sh`: verified WSL/Linux entry for the 20-point 4-flit 5x5 queue-knee sweep.
 - `AGENTS.md`: Codex-facing memory file.
 - `README.md`: Chinese user-facing project summary.
+- `file/周报/`: 本地保留的周报与下周工作计划 TXT 记录；该目录默认不纳入 Git。
+- `file/代码分析/`: 可复用的 NoC 模块代码分析 Markdown；该目录纳入 Git，当前包括环形缓冲区、仲裁器、VC allocator、input buffer、input port 和 input block 分析。//Modify classify local records and tracked code analyses, Michael Tan, 20260825
 
 ## Documentation Sync Rule
 
