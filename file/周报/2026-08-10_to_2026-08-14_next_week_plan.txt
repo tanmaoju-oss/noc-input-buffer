@@ -1,0 +1,21 @@
+2026年8月10日—8月14日工作计划
+
+周一上午：复查已完成的 noc_board_ila_top.sv、noc_board_traffic_generator.sv 与 mesh 的接口、握手时序和 flit 格式；梳理两个模块的仿真验证点，包括差分时钟/复位、随机包产生、源端队列、四 flit 注入和目的端接收。
+
+周一下午：完善现有 testbench/tb_noc_board_traffic_generator.sv 的验证场景和检查项，针对 25 个节点独立流量、0.1 注入阈值、非自身目的节点、64 项源端队列和 HEAD/BODY/BODY/TAIL 包格式进行集成仿真验证。
+
+周二上午：开展党建学习及相关材料整理，完成学习记录和阶段性台账维护。
+
+周二下午：配合公司融资资料整理，核对项目基本情况、研发进度及所需技术数据。
+
+周三上午：新建顶层专用 testbench/tb_noc_board_ila_top.sv 及对应 WSL 仿真脚本，完成对 noc_board_ila_top.sv 的差分时钟输入、两级复位同步释放、5×5/4VC mesh 接入和流量发生器顶层集成的验证设计。
+
+周三下午：使用 Linux Vivado 2025.2 运行流量发生器集成 testbench 和顶层专用 testbench，检查 xvlog、xelab、xsim 日志及结果文件；核对接收 flit 数、错误数、复位后启动和持续注入行为。
+
+周四上午：根据仿真日志修正可能的接口、计数、队列边界或复位时序问题，重新运行两个 testbench，确认顶层与流量发生器验证结果可复现。
+
+周四下午：在现有顶层和流量发生器验证通过的基础上，设计可综合延迟监控器 noc_board_latency_monitor.sv 的模块接口、包标识匹配方式、计数器位宽及其与顶层的连接方案，为下一阶段代码实现和独立 testbench 做准备。
+
+周五上午：开展党建相关学习与交流，整理本周党建工作材料。
+
+周五下午：跟进公司融资相关事项，配合完成内部资料核对和沟通；同步整理 noc_board_ila_top.sv、noc_board_traffic_generator.sv 的 testbench、仿真日志、结果文件和阶段性技术周报材料。
