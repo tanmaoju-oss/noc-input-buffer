@@ -189,4 +189,25 @@ module noc_board_ila_top #(
         .debug_last_packet_latency_o(monitor_debug_last_packet_latency)
     );
 
+    //Modify observe monitor and traffic-window state through the isolated board ILA wrapper without changing NoC behavior, Michael Tan, 20260908
+    noc_board_ila_debug board_ila_debug (
+        .clk(noc_clk),
+        .traffic_window_phase_i(traffic_window_phase),
+        .traffic_generate_enable_i(traffic_generate_enable),
+        .monitor_measurement_enable_i(monitor_measurement_enable),
+        .monitor_packets_enqueued_i(monitor_packets_enqueued),
+        .monitor_queue_full_i(monitor_queue_full),
+        .monitor_tails_received_i(monitor_tails_received),
+        .monitor_unmatched_tails_i(monitor_unmatched_tails),
+        .monitor_timestamp_overwrites_i(monitor_timestamp_overwrites),
+        .monitor_total_latency_cycles_i(monitor_total_latency_cycles),
+        .monitor_debug_tail_event_i(monitor_debug_tail_event),
+        .monitor_debug_tail_packet_id_i(monitor_debug_tail_packet_id),
+        .monitor_debug_tail_source_id_i(monitor_debug_tail_source_id),
+        .monitor_debug_tail_sequence_i(monitor_debug_tail_sequence),
+        .monitor_debug_enqueue_cycle_i(monitor_debug_enqueue_cycle),
+        .monitor_debug_current_cycle_i(monitor_debug_current_cycle),
+        .monitor_debug_last_packet_latency_i(monitor_debug_last_packet_latency)
+    );
+
 endmodule

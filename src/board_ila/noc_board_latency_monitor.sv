@@ -33,13 +33,14 @@ module noc_board_latency_monitor #(
     localparam SOURCE_COUNT = MESH_SIZE_X * MESH_SIZE_Y;
     localparam SOURCE_ID_WIDTH = $clog2(SOURCE_COUNT);
     localparam PACKET_SEQUENCE_WIDTH = HEAD_PAYLOAD_SIZE - SOURCE_ID_WIDTH;
-    localparam TRACK_TABLE_DEPTH = 1 << PACKET_SEQUENCE_WIDTH;
+    localparam TRACK_TABLE_DEPTH = 1 << PACKET_SEQUENCE_WIDTH;//Modify restore the complete packet-sequence tracking capacity without reducing monitor semantics, Michael Tan, 20260908
+    localparam TRACK_INDEX_WIDTH = $clog2(TRACK_TABLE_DEPTH);
     localparam FLIT_INDEX_WIDTH = $clog2(PACKET_FLIT_NUM);
 
     logic [COUNTER_WIDTH-1:0] cycle_counter;
-    logic [COUNTER_WIDTH-1:0] enqueue_cycle [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
-    logic entry_valid [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
-    logic entry_is_measured [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
+    logic [TRACK_TABLE_DEPTH-1:0][COUNTER_WIDTH-1:0] enqueue_cycle [SOURCE_COUNT-1:0];//Modify pack sequence storage per source to preserve [source][sequence] behavior while avoiding a 3D unpacked array, Michael Tan, 20260908
+    logic [TRACK_TABLE_DEPTH-1:0] entry_valid [SOURCE_COUNT-1:0];//Modify pack timestamp-valid bits per source without changing sequence indexing, Michael Tan, 20260908
+    logic [TRACK_TABLE_DEPTH-1:0] entry_is_measured [SOURCE_COUNT-1:0];//Modify pack measurement qualifiers per source without changing sequence indexing, Michael Tan, 20260908
 
     always_ff @(posedge clk) begin : latency_measurement
         integer enqueue_increment;
@@ -51,6 +52,7 @@ module noc_board_latency_monitor #(
         logic [HEAD_PAYLOAD_SIZE-1:0] tail_packet_id;
         logic [SOURCE_ID_WIDTH-1:0] tail_source_id;
         logic [PACKET_SEQUENCE_WIDTH-1:0] tail_sequence;
+        logic [TRACK_INDEX_WIDTH-1:0] tail_tracking_index;
 
         if (rst) begin
             cycle_counter <= '0;
@@ -89,11 +91,11 @@ module noc_board_latency_monitor #(
                     if (measurement_enable_i && packet_queue_full_i[x][y])
                         queue_full_increment = queue_full_increment + 1;//Modify count only measurement-window offers rejected by the bounded source queue, Michael Tan, 20260827
                     if (packet_enqueued_i[x][y]) begin
-                        if (entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]])
+                        if (entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]])
                             overwrite_increment = overwrite_increment + 1;//Modify flag timestamp-table reuse before an older same-ID packet reached TAIL, Michael Tan, 20260817
-                        entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= 1'b1;//Modify timestamp every accepted source-queue entry by its encoded source and sequence, Michael Tan, 20260817
-                        entry_is_measured[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= measurement_enable_i;//Modify retain whether this accepted packet belongs to the measurement window, Michael Tan, 20260827
-                        enqueue_cycle[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= cycle_counter;
+                        entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= 1'b1;//Modify index the bounded timestamp table with low packet-sequence bits, Michael Tan, 20260908
+                        entry_is_measured[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= measurement_enable_i;//Modify retain whether this accepted packet belongs to the measurement window, Michael Tan, 20260827
+                        enqueue_cycle[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= cycle_counter;//Modify store latency timestamps in the synthesis-bounded table, Michael Tan, 20260908
                         if (measurement_enable_i)
                             enqueue_increment = enqueue_increment + 1;//Modify count only accepted source-queue entries created during the measurement window, Michael Tan, 20260827
                     end
@@ -102,19 +104,20 @@ module noc_board_latency_monitor #(
                         tail_packet_id = local_data_i[x][y].data.bt_pl[FLIT_INDEX_WIDTH +: HEAD_PAYLOAD_SIZE];
                         tail_source_id = tail_packet_id[HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH];
                         tail_sequence = tail_packet_id[PACKET_SEQUENCE_WIDTH-1:0];
-                        if ((tail_source_id < SOURCE_COUNT) && entry_valid[tail_source_id][tail_sequence]) begin
-                            entry_valid[tail_source_id][tail_sequence] <= 1'b0;
-                            entry_is_measured[tail_source_id][tail_sequence] <= 1'b0;//Modify clear the qualification bit together with every matched timestamp entry, Michael Tan, 20260827
-                            if (entry_is_measured[tail_source_id][tail_sequence]) begin
-                                latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_sequence]);
+                        tail_tracking_index = tail_sequence[TRACK_INDEX_WIDTH-1:0];//Modify map full packet sequence to bounded timestamp-table index, Michael Tan, 20260908
+                        if ((tail_source_id < SOURCE_COUNT) && entry_valid[tail_source_id][tail_tracking_index]) begin
+                            entry_valid[tail_source_id][tail_tracking_index] <= 1'b0;
+                            entry_is_measured[tail_source_id][tail_tracking_index] <= 1'b0;//Modify clear the qualification bit together with every matched timestamp entry, Michael Tan, 20260827
+                            if (entry_is_measured[tail_source_id][tail_tracking_index]) begin
+                                latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_tracking_index]);
                                 tail_increment = tail_increment + 1;//Modify accumulate only TAILs whose accepted source-queue entry was in the measurement window, Michael Tan, 20260827
                             end
                             debug_tail_event_o <= 1'b1;//Modify expose a matched TAIL event for direct latency waveform correlation, Michael Tan, 20260820
                             debug_tail_packet_id_o <= tail_packet_id;
                             debug_tail_source_id_o <= tail_source_id;
                             debug_tail_sequence_o <= tail_sequence;
-                            debug_enqueue_cycle_o <= enqueue_cycle[tail_source_id][tail_sequence];
-                            debug_last_packet_latency_o <= cycle_counter - enqueue_cycle[tail_source_id][tail_sequence];//Modify retain the exact per-packet latency added to the aggregate counter, Michael Tan, 20260820
+                            debug_enqueue_cycle_o <= enqueue_cycle[tail_source_id][tail_tracking_index];
+                            debug_last_packet_latency_o <= cycle_counter - enqueue_cycle[tail_source_id][tail_tracking_index];//Modify retain the exact per-packet latency added to the aggregate counter, Michael Tan, 20260820
                         end else begin
                             unmatched_increment = unmatched_increment + 1;//Modify retain unmatched-Tail evidence instead of silently corrupting latency statistics, Michael Tan, 20260817
                         end

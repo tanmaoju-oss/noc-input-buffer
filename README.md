@@ -36,9 +36,52 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 当前已增加并验证 WSL/Linux Bash 入口 `scripts/simulation/run_tb_mesh.sh`，同时继续保留 `.ps1` 脚本作为 Windows 复现入口。
 
+## Vivado 使用分工
+
+| 情况 | 使用环境 | 要求与结果位置 |
+| --- | --- | --- |
+| RTL 编译检查、功能仿真、回归仿真、注入率扫描、波形和结果分析 | WSL/Linux Vivado 2025.2 | 默认使用 Bash 入口；结果写入 `vivado_sim_wsl/<top>_sim/`。若 xsim 出现已知 Tcl 快照异常，应在沙箱外重跑。 |
+| 新增或修改 RTL、TB、监测器、ILA wrapper 的功能验证 | 先用 WSL/Linux Vivado 2025.2 | 先验证功能、断言和统计关系；此结果不代表目标 FPGA 的实现结果。 |
+| `xcvu440-flga2892-2-e` 的综合、实现、时序分析、生成 `.bit/.ltx` | Windows Vivado 2019.2（有许可证） | 必须通过 `powershell.exe` 调用 Windows Vivado；结果写入 `vivado_synthesis_windows/<top>_synthesis/`。 |
+| ILA IP 创建、ILA 实例的最终综合实现、JTAG 上板文件生成 | Windows Vivado 2019.2（有许可证） | ILA IP 与 `.bit/.ltx` 必须来自同一 Windows 实现运行；不要将 2025.2 生成的 ILA IP 直接用于 2019.2。 |
+| Windows Vivado 仿真复核 | Windows Vivado 2019.2（按需） | 仅在需要检查 2019.2 兼容性、ILA 仿真 stub 或与 Windows 历史结果比较时运行；先同步 Linux 的 `scripts/` 与相关源码，结果写入 `vivado_sim_windows/<top>_sim/`。 |
+
+默认流程是“WSL 功能验证 → Windows 目标器件综合/实现 → 上板验证”。不要因 Linux 免费许可证无法实现 `xcvu440` 而提前维护两套 RTL；仅在 Windows 报告实际兼容性问题时修改共享 RTL。<!-- Modify define WSL and Windows Vivado workflow boundaries, Michael Tan, 20260908 -->
+
+目标板 FPGA 的完整器件名固定为 `xcvu440-flga2892-2-e`；所有 Windows Vivado 综合、实现、ILA IP 生成及后续 `.bit/.ltx` 必须使用此完整 Part，不能以 `xcvu440` 简写替代。<!-- Modify record exact target FPGA part name, Michael Tan, 20260908 -->
+
+## 2026-09-08 ILA 包装层与 WSL 验证（进行中）
+
+- 新增板级 ILA 包装层，将 `noc_clk`、统计窗口状态、延迟累计计数和单包 TAIL 调试寄存器集中映射为稳定 probe。WSL 仿真默认采用 no-op 分支验证 probe 连线，不依赖 Windows 2019.2 生成的 ILA IP。
+- Windows 2019.2 创建匹配的 `ila_0` IP 后，以 `NOC_BOARD_ILA_VIVADO_IP` 宏启用真实实例；本步不创建 XDC、Windows 综合实现、`.bit/.ltx` 或 JTAG 下载。
+
+<!-- Modify record start of board ILA wrapper integration and WSL verification, Michael Tan, 20260908 -->
+
+## 2026-09-08 ILA 包装层与 WSL 验证完成
+
+- 新增 `src/board_ila/noc_board_ila_debug.sv`，并接入 `noc_board_ila_top.sv`。包装层固定映射 `noc_clk`、窗口相位/使能、五个统计计数、累计延迟和八个单包调试信号；默认 no-op 分支用于 WSL，Windows 2019.2 在包含匹配 `ila_0` IP 后以 `NOC_BOARD_ILA_VIVADO_IP` 宏启用真实 ILA 实例。
+- 新增 `testbench/tb_noc_board_ila_wrapper.sv` 与 `scripts/simulation/run_tb_noc_board_ila_wrapper.sh`。Linux Vivado 2025.2 使用 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 在沙箱外通过；结果位于 `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log`：`enqueued=2525`、`tails=2525`、`tail_events=1134`、`probe_mismatches=0`、`total_latency=60569`。这证明包装层不改变流量/监测行为，且 16 个 WSL probe 均与其顶层源信号逐拍一致。
+- 本步尚未创建 Windows ILA IP、XDC、综合实现、`.bit/.ltx` 或 JTAG 下载；下一步是在 Windows Vivado 2019.2 按包装层的 `probe0` 至 `probe15` 位宽创建 `ila_0`，启用宏后执行目标器件实现。
+
+<!-- Modify record completed board ILA wrapper integration and WSL verification, Michael Tan, 20260908 -->
+
+## 2026-09-08 Windows ILA IP 生成与综合验证（进行中）
+
+- 为固定的 16 个 `probe` 创建 Windows Vivado 2019.2 ILA IP 生成 Tcl，并增加 `noc_board_ila_top` 的 VU440 综合入口。综合时定义 `NOC_BOARD_ILA_VIVADO_IP`，以验证真实 `ila_0` 实例、IP 配置和 RTL 端口连接。
+- 综合展开显示原监测器每源 2048 项时间戳表超过 Vivado 2019.2 单变量规模限制；板级首版追踪表将设为 64 项（与默认源队列相同），并保持低 6 位序号索引。若极端拥塞使未到达包超过此容量，现有覆盖计数器会通过 ILA 显式报告。
+- 本步仅生成 ILA IP 并执行综合网表检查；尚无独立新 XDC，因此不执行实现、时序收敛、`.bit/.ltx` 生成或 JTAG 下载。
+- 已终止耗时过长的多维监测表综合，开始在不缩小原始 25×2048 追踪容量、不改变统计语义的条件下重构监测器存储；修改后必须逐项对比既有 ILA wrapper TB 的包数、总延迟、未匹配数、覆盖数及 probe 值。
+- 已将监测器序号维度改为每源独立的 packed 存储，仍保留 `25×2048×32` 位时间戳和全部有效/测量标志。WSL Vivado 2025.2 回归命令 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过，结果与重构前完全一致：`enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`；结果文件为 `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log`。本次仅修改监测器，等价性验证止于 WSL；不运行 Windows Vivado 综合。
+
+<!-- Modify record start of Windows ILA IP and synthesis verification, Michael Tan, 20260908 -->
+
 ## 周报与工作计划记录规则
 
 当需要编写周报或下周工作计划时，统一使用 `file/周报/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。周报和下周工作计划的每条事项应为一条短句，篇幅不超过“完成板级随机流量发生器的均匀非自身目的地址映射与 LFSR 去相关方案整理，核对种子分散。”这一示例；MBO 的指标描述和衡量标准可按表格格式保留必要的完整说明。每次新建或修改该目录中的周报、工作计划或 MBO 文档后，均自动同步对应文件到 Windows 工作副本 `E:\\Codex-Project\\NoC-XY\\file\\周报\\`，并确认目标文件存在；此同步不依赖 Git。<!-- Modify scope concise weekly-item length and retain Windows synchronization rule, Michael Tan, 20260828 -->
+
+`file/` 下的资料同步必须按同名子目录对应：`file/代码分析/ → E:\\Codex-Project\\NoC-XY\\file\\代码分析\\`，`file/仿真分析/ → E:\\Codex-Project\\NoC-XY\\file\\仿真分析\\`，`file/周报/ → E:\\Codex-Project\\NoC-XY\\file\\周报\\`。正常同步不得写入仓库外的临时备份目录；`E:\\Codex-Project\\NoC-XY-sync-backup-8777ef2` 仅保留当时 Windows 未跟踪文件的历史副本。<!-- Modify enforce corresponding file-subdirectory synchronization, Michael Tan, 20260908 -->
+
+每次修改 `src/` 中的 RTL/设计代码并完成必要验证后，必须将相关变更 Git 提交并推送到 GitHub；推送完成后同步 Windows 工作副本，并确认其提交与远程一致。<!-- Modify require GitHub push after every verified src change, Michael Tan, 20260908 -->
 
 <!-- Modify classify weekly-plan records under file/周报, Michael Tan, 20260825 -->
 

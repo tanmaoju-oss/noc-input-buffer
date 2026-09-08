@@ -23,9 +23,36 @@ Repository path:
 - The required Ubuntu packages for xsim, including GCC/G++/Make and the Vivado Linux dependency set, are installed. A temporary `/tmp` smoke run of `tb_mesh` reached `[TB_MESH] PASSED` after xsim was allowed to run outside the Codex command sandbox.
 - Codex sandbox execution can cause xsim snapshot loading to fail with only `ERROR: unexpected exception when evaluating tcl command`. If `xvlog` and `xelab` succeed but this exact xsim load error appears, rerun the xsim/simulation command with approved escalated execution instead of treating it as an RTL or missing-library failure.
 - Windows Vivado 2019.2 is installed at `E:\Vivado\Vivado\2019.2`. All future Vivado synthesis tasks must use this licensed Windows installation, invoked from Codex through `powershell.exe`; do not use the unlicensed Linux Vivado installation for synthesis.//Modify establish Windows Vivado synthesis rule, Michael Tan, 20260729
+- The board target part is exactly `xcvu440-flga2892-2-e`; retain the full package/speed-grade name in every Windows Vivado synthesis, implementation, ILA IP, `.bit`, and `.ltx` command. Do not replace it with the abbreviated `xcvu440`.//Modify record exact target FPGA part name, Michael Tan, 20260908
 - Existing `.ps1` simulation records later in this file belong to the former Windows workflow. Treat them as historical run records unless the workflow has first been adapted and verified for the current environment.
 - Do not report a simulation as verified in the new environment merely because old Windows-generated logs or result files exist. Record whether a result is historical or newly reproduced.
 - Before future simulation work, verify the Vivado 2025.2 path and use the matching Linux/Bash entry while keeping old Windows scripts for reproducibility.
+- Vivado division of responsibility: use WSL/Linux Vivado 2025.2 for RTL compile checks, functional/regression simulation, injection sweeps, waveform inspection, and reusable analysis; use licensed Windows Vivado 2019.2 only for `xcvu440-flga2892-2-e` synthesis, implementation, timing, ILA IP creation, `.bit/.ltx` generation, and optional Windows compatibility simulation. The normal order is WSL functional verification, then Windows target-device implementation, then hardware/JTAG validation. Do not fork RTL by Vivado version unless Windows reports an actual compatibility issue.//Modify define WSL and Windows Vivado workflow boundaries, Michael Tan, 20260908
+
+## Active Task Started 2026-09-08: Board ILA Wrapper Integration and WSL Verification
+
+- Add a board-level ILA wrapper that maps the existing monitor/window/debug signals to a fixed Vivado ILA probe contract. WSL uses its no-op branch to compile and simulate the wiring without a vendor IP; Windows Vivado 2019.2 will later create `ila_0` and enable the real branch with `NOC_BOARD_ILA_VIVADO_IP`.
+- Add an independent wrapper integration TB, WSL runner, and isolated result directory. This task excludes XDC, Windows synthesis/implementation, `.bit/.ltx`, and JTAG download.
+
+//Modify record start of board ILA wrapper integration and WSL verification, Michael Tan, 20260908
+
+## Completed 2026-09-08: Board ILA Wrapper Integration and WSL Verification
+
+- Added `src/board_ila/noc_board_ila_debug.sv` and integrated it into `src/board_ila/noc_board_ila_top.sv`. The wrapper has a fixed 16-probe Vivado contract for the NoC clock, traffic-window state, monitor counters/total latency, and per-TAIL debug values. Its default WSL no-op branch preserves input ports for functional verification; the `NOC_BOARD_ILA_VIVADO_IP` branch instantiates a Windows Vivado 2019.2-generated `ila_0` with the same probe map.
+
+## Active Task Started 2026-09-08: Windows ILA IP Creation and Synthesis Verification
+
+- Create a Windows Vivado 2019.2 Tcl entry that generates an `ila_0` IP matching the fixed 16-probe contract, plus a VU440 `noc_board_ila_top` synthesis runner that defines `NOC_BOARD_ILA_VIVADO_IP` to elaborate the real wrapper branch.
+- The first target-device elaboration generated `ila_0` successfully, then found the monitor's 25-by-2048-by-32-bit `enqueue_cycle` variable exceeds the Vivado 2019.2 1,000,000-bit single-variable limit. The 1024- and 256-entry retries inferred large multidimensional register tables and made complete synthesis impractically slow. Use the board-default 64-entry table indexed with low sequence bits, matching the default 64-entry source queue; `timestamp_overwrites` remains an ILA-visible guard against a capacity collision under extreme congestion. Rerun WSL functional verification and the Windows target synthesis.
+- This task is limited to IP generation and RTL synthesis validation. No new XDC exists yet, so implementation, timing closure, `.bit/.ltx`, and JTAG download remain out of scope.
+- The user stopped the slow full synthesis on 2026-09-08 and requires a monitor-storage refactor that retains the original 25-by-2048 tracking capacity and does not change observable results. Before declaring it complete, compare the existing ILA-wrapper TB's packets, total latency, unmatched tails, timestamp overwrites, and every probe check against the prior `2525/60569/0/0` result.
+- Updated `src/board_ila/noc_board_latency_monitor.sv` by packing the sequence dimension within each source while retaining the exact 25-by-2048 tracking capacity and `[source][sequence]` accesses. WSL Vivado 2025.2 regression command `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` passed at `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log`: `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`, exactly matching the required prior result. Per user direction, this monitor-only equivalence task stops at WSL verification; do not run Windows Vivado synthesis for it.
+
+//Modify record start of Windows ILA IP creation and synthesis verification, Michael Tan, 20260908
+- Added `testbench/tb_noc_board_ila_wrapper.sv` and `scripts/simulation/run_tb_noc_board_ila_wrapper.sh`. Linux Vivado 2025.2 verification used `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` outside the Codex sandbox. `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log` reports `[TB_BOARD_ILA_WRAPPER] PASSED warmup=200 measure=1000 drain=8000 enqueued=2525 tails=2525 tail_events=1134 probe_mismatches=0 total_latency=60569`; every wrapper input matched its source signal each sampled cycle, and the pre-existing monitor invariants remained clean.
+- No Windows ILA IP, XDC, Windows synthesis/implementation, `.bit/.ltx`, or JTAG download was created. The next scoped step is to create `ila_0` in Windows Vivado 2019.2 with the wrapper's `probe0`–`probe15` widths, define `NOC_BOARD_ILA_VIVADO_IP`, and perform target-device implementation.
+
+//Modify record completed board ILA wrapper integration and WSL verification, Michael Tan, 20260908
 
 ## Canonical Repository Layout
 
@@ -87,12 +114,14 @@ noc-input-buffer/
 - 当用户要求编写周报或下周工作计划时，使用与 `file/周报/2026-08-下周工作计划.txt` 一致的简洁格式：按“周一上午”至“周五下午”逐项列出。除项目研发任务外，默认纳入党建学习/材料整理及公司融资资料整理/沟通等工作安排；如用户提供了具体事项，以用户事项为准。//Modify classify weekly records under file/周报, Michael Tan, 20260825
 - 周报和下周工作计划中的每一条事项均应保持简洁，篇幅不得超过“完成板级随机流量发生器的均匀非自身目的地址映射与 LFSR 去相关方案整理，核对种子分散。”这一示例的长度；优先使用一条短句表达任务、对象和必要结果。MBO 的指标描述和衡量标准可按其表格格式保留必要的完整说明。//Modify scope concise weekly-item length rule to reports and plans, Michael Tan, 20260828
 - 每次新建或修改 `file/周报/` 中的周报、工作计划或 MBO 文档后，必须自动同步对应文件到 Windows 工作副本 `E:\\Codex-Project\\NoC-XY\\file\\周报\\`，并确认目标文件存在；该同步独立于 Git，适用于被忽略的本地文档。//Modify add automatic weekly-document synchronization to Windows, Michael Tan, 20260828
+- `file/` 下需同步到 Windows 的资料必须保持同名子目录映射：`file/代码分析/` 同步到 `E:\\Codex-Project\\NoC-XY\\file\\代码分析\\`，`file/仿真分析/` 同步到 `E:\\Codex-Project\\NoC-XY\\file\\仿真分析\\`，周报仍同步到 `file\\周报\\`。不得将正常同步资料写入仓库外的临时备份目录；历史 `E:\\Codex-Project\\NoC-XY-sync-backup-8777ef2` 仅作既有 Windows 未跟踪文件的保留副本。//Modify enforce corresponding file-subdirectory synchronization, Michael Tan, 20260908
 - Do not modify source files when the user asks only for analysis or says not to modify yet.
 - Before starting any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` when the task changes project state or produces reusable results.//Modify add mandatory memory-sync rule before future code/tb/simulation work, Michael Tan, 20260626
 - After finishing any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` with changed files, run commands, result paths, and important simulation results.//Modify add mandatory post-task documentation rule, Michael Tan, 20260626
 - For every new simulation feature, create a new tb file and a corresponding simulation entry/result directory. Do not directly repurpose an existing tb such as the 2x3 baseline sweep.//Modify add new-tb-per-feature rule, Michael Tan, 20260629
 - Follow the canonical layout strictly: RTL in `src/`, tb files in `testbench/`, scripts in `scripts/`, Windows results in `vivado_sim_windows/`, and WSL/Linux results in `vivado_sim_wsl/`.
 - 当用户要求将变更 Git 提交并推送到远程仓库后，还必须将远程仓库同步拉取到 Windows 目录 `E:\\Codex-Project\\NoC-XY`；确认该目录中的工作副本已更新到对应提交。//Modify add Git-to-Windows repository synchronization rule, Michael Tan, 20260729
+- 每次修改 `src/` 中的 RTL/设计代码并完成必要验证后，必须将相关变更 Git 提交并推送到 GitHub；推送后按既有规则同步 Windows 工作副本并确认提交一致。//Modify require GitHub push after every verified src change, Michael Tan, 20260908
 - Every code modification must be marked near the changed code with:
 
 ```systemverilog
