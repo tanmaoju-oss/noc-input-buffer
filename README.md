@@ -72,6 +72,8 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 - 本步仅生成 ILA IP 并执行综合网表检查；尚无独立新 XDC，因此不执行实现、时序收敛、`.bit/.ltx` 生成或 JTAG 下载。
 - 已终止耗时过长的多维监测表综合，开始在不缩小原始 25×2048 追踪容量、不改变统计语义的条件下重构监测器存储；修改后必须逐项对比既有 ILA wrapper TB 的包数、总延迟、未匹配数、覆盖数及 probe 值。
 - 已将监测器序号维度改为每源独立的 packed 存储，仍保留 `25×2048×32` 位时间戳和全部有效/测量标志。WSL Vivado 2025.2 回归命令 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过，结果与重构前完全一致：`enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`；结果文件为 `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log`。本次仅修改监测器，等价性验证止于 WSL；不运行 Windows Vivado 综合。
+- 下一步仅在 WSL 重排 `noc_board_traffic_generator.sv` 的多维状态和源队列存储；不得修改随机序列、目的地址映射、队列深度或任一入队/出队优先级。验收必须与既有 ILA wrapper TB 的全部统计和 probe 检查一致，不运行 Windows Vivado 综合。
+- 已将流量发生器的 y 源维和 FIFO 槽位维改为 packed 存储；`[x][y]` 与 `[x][y][slot]` 的索引、64 项队列深度、LFSR/目的地址和发送优先级均未改动。WSL 命令 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过，结果保持 `enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`。
 
 <!-- Modify record start of Windows ILA IP and synthesis verification, Michael Tan, 20260908 -->
 

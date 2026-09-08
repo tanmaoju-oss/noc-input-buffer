@@ -27,19 +27,19 @@ module noc_board_traffic_generator #(
     localparam SOURCE_ID_WIDTH = $clog2(SOURCE_COUNT);
     localparam PACKET_SEQUENCE_WIDTH = HEAD_PAYLOAD_SIZE - SOURCE_ID_WIDTH;
 
-    logic [LFSR_WIDTH-1:0] traffic_lfsr [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [PACKET_SEQUENCE_WIDTH-1:0] next_packet_sequence [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [QUEUE_PTR_WIDTH-1:0] queue_head [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [QUEUE_PTR_WIDTH-1:0] queue_tail [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [QUEUE_PTR_WIDTH:0] queue_count [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [DEST_ADDR_SIZE_X-1:0] queue_dst_x [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0];
-    logic [DEST_ADDR_SIZE_Y-1:0] queue_dst_y [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0];
-    logic [HEAD_PAYLOAD_SIZE-1:0] queue_packet_id [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0];
-    logic packet_active [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [FLIT_INDEX_WIDTH-1:0] active_flit_index [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [DEST_ADDR_SIZE_X-1:0] active_dst_x [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [DEST_ADDR_SIZE_Y-1:0] active_dst_y [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
-    logic [HEAD_PAYLOAD_SIZE-1:0] active_packet_id [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
+    logic [MESH_SIZE_Y-1:0][LFSR_WIDTH-1:0] traffic_lfsr [MESH_SIZE_X-1:0];//Modify pack the y-source dimension without changing [x][y] LFSR access, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][PACKET_SEQUENCE_WIDTH-1:0] next_packet_sequence [MESH_SIZE_X-1:0];//Modify pack per-source sequence state while retaining exact queue behavior, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][QUEUE_PTR_WIDTH-1:0] queue_head [MESH_SIZE_X-1:0];//Modify pack y-source queue-head state without changing FIFO indexing, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][QUEUE_PTR_WIDTH-1:0] queue_tail [MESH_SIZE_X-1:0];//Modify pack y-source queue-tail state without changing FIFO indexing, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][QUEUE_PTR_WIDTH:0] queue_count [MESH_SIZE_X-1:0];//Modify pack y-source occupancy state without changing enqueue/dequeue priority, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0][DEST_ADDR_SIZE_X-1:0] queue_dst_x [MESH_SIZE_X-1:0];//Modify pack queue storage dimensions while preserving [x][y][slot] mapping, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0][DEST_ADDR_SIZE_Y-1:0] queue_dst_y [MESH_SIZE_X-1:0];//Modify pack queue storage dimensions while preserving [x][y][slot] mapping, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][SOURCE_QUEUE_DEPTH-1:0][HEAD_PAYLOAD_SIZE-1:0] queue_packet_id [MESH_SIZE_X-1:0];//Modify pack queue packet IDs while preserving FIFO slot order, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0] packet_active [MESH_SIZE_X-1:0];//Modify pack y-source active flags without changing packet emission state, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][FLIT_INDEX_WIDTH-1:0] active_flit_index [MESH_SIZE_X-1:0];//Modify pack y-source flit indices without changing packet order, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][DEST_ADDR_SIZE_X-1:0] active_dst_x [MESH_SIZE_X-1:0];//Modify pack y-source active X destinations without changing packet content, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][DEST_ADDR_SIZE_Y-1:0] active_dst_y [MESH_SIZE_X-1:0];//Modify pack y-source active Y destinations without changing packet content, Michael Tan, 20260908
+    logic [MESH_SIZE_Y-1:0][HEAD_PAYLOAD_SIZE-1:0] active_packet_id [MESH_SIZE_X-1:0];//Modify pack y-source active packet IDs without changing packet identity, Michael Tan, 20260908
 
     function automatic logic [LFSR_WIDTH-1:0] next_lfsr(input logic [LFSR_WIDTH-1:0] value);
         next_lfsr = {value[LFSR_WIDTH-2:0], value[LFSR_WIDTH-1] ^ value[LFSR_WIDTH-3] ^ value[LFSR_WIDTH-4] ^ value[LFSR_WIDTH-6]};//Modify use a maximal-length 16-bit LFSR step for synthesizable traffic randomness, Michael Tan, 20260805
