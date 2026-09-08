@@ -235,6 +235,39 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 
 <!-- Modify record completed board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908 -->
 
+## 2026-09-08 存储重排后的 0.10–0.20 等价性复核（进行中）
+
+- 已确认重排后的 0.10 ILA-wrapper 回归保持 `enqueued=2525`、`tails=2525`、`total_latency=60569` 和零异常；现将保存重排前的 0.11–0.20 十点结果，并以同一 WSL 扫频脚本逐点复跑比较。仅补齐脚本对 ILA 调试包装模块的编译依赖，不改变注入、路由或统计行为。
+
+<!-- Modify record start of traffic-generator storage refactor 0.10-to-0.20 equivalence recheck, Michael Tan, 20260908 -->
+
+## 2026-09-08 存储重排后的 0.10–0.20 等价性复核完成
+
+- 补齐 `scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh` 对 `noc_board_ila_debug.sv` 的编译依赖后，使用 WSL Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`。新结果位于 `vivado_sim_wsl/tb_noc_board_latency_monitor_rate_sweep_011_to_020_sim/board_latency_results.txt`，十点全部 `PASSED`。
+- 0.10 的 ILA-wrapper 基线仍为 `2525` 包、`60569` 总 cycles、`23.987` cycles；0.11–0.20 十点与重排前记录逐字段完全一致，平均延迟依次为 `28.149`、`37.650`、`57.399`、`85.318`、`125.131`、`168.746`、`215.469`、`265.748`、`322.862`、`371.774` cycles。各点均为 `enqueued==tails`，且 queue-full、未匹配、时间戳覆盖和 NoC 错误均为零；因此本次存储维度重排未改变功能或性能结果。
+
+<!-- Modify record completed traffic-generator storage refactor 0.10-to-0.20 equivalence recheck, Michael Tan, 20260908 -->
+
+## 2026-09-08 ILA 顶层 Windows 综合复测（进行中）
+
+- 在尚未添加 XDC 前，使用 Windows Vivado 2019.2 对 `xcvu440-flga2892-2-e` 的 `noc_board_ila_top` 重新执行仅综合，量化重排后前端综合耗时，并检查 ILA IP、probe 连接和资源报告。不会运行实现、生成 bitstream 或修改 XDC。
+
+<!-- Modify record start of post-storage-refactor Windows ILA-top synthesis measurement, Michael Tan, 20260908 -->
+
+## 2026-09-08 ILA 顶层 Windows 综合复测结果
+
+- Windows Vivado 2019.2 使用 `xcvu440-flga2892-2-e` 运行 `scripts/synthesis/run_noc_board_ila_top_synthesis.ps1`；ILA `ila_0` 的 16 个 probe IP 已成功生成并读入，但 `synth_design` 在 RTL 展开阶段失败，未进入网表优化或资源报告阶段。
+- 失败耗时为 CPU `24 s`、墙钟 `27 s`、峰值内存约 `2381 MB`。根因是 `noc_board_latency_monitor.sv` 的 `enqueue_cycle` 单变量大小为 `25×2048×32=1,638,400 bits`，超过 Vivado 2019.2 的 `1,000,000-bit` 单变量上限（`Synth 8-4556`）。这不是 XDC、ILA probe 或功能仿真的问题；需将监测器时间戳表分成多个独立 bank 后再综合，且必须保持已验证的索引语义和 0.10–0.20 仿真结果。
+
+<!-- Modify record failed post-storage-refactor Windows ILA-top synthesis measurement, Michael Tan, 20260908 -->
+
+## 2026-09-08 监测器时间戳双 Bank 重构（进行中）
+
+- 为消除 Vivado 2019.2 的单变量上限，仅将 `enqueue_cycle` 按 packet sequence 的最高位拆为两个 `25×1024×32` 位时间戳 bank；每个 bank 为 `819200 bits`。valid/measurement 表、包 ID、统计口径和流量发生器均不改。修改后依次复核 0.10 wrapper、0.11–0.20 扫频，再重跑 Windows 综合。
+- WSL Vivado 2025.2 已通过 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 与 `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`：0.10 保持 `2525` 包、`60569` 总 cycles、`23.987` cycles；0.11–0.20 十点的所有包数、总延迟、平均延迟与既有表逐字段完全一致，所有异常计数仍为零。
+
+<!-- Modify record start of monitor timestamp dual-bank synthesis-limit refactor, Michael Tan, 20260908 -->
+
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 
 - 基于 `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.md` 的十个实测点，新增可复用绘图脚本和双曲线 PNG，直观比较两种流量发生模型在 0.11–0.20 区间的平均延迟。

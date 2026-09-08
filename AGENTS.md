@@ -263,6 +263,43 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 
 //Modify record completed board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908
 
+## Active Task Started 2026-09-08: Traffic-Generator Storage Refactor 0.10–0.20 Equivalence Recheck
+
+- The refactored ILA-wrapper 0.10 point remains exact: `enqueued=2525`, `tails=2525`, `total_latency=60569`, and zero monitor/probe exceptions. Preserve the prior 0.11–0.20 table, then rerun the same WSL sweep and compare every field.
+- The sweep runner must compile `src/board_ila/noc_board_ila_debug.sv`, now instantiated by the board top; this is a dependency-only script adjustment and must not alter traffic generation, routing, queue policy, or statistics. No Windows Vivado synthesis is required.
+
+//Modify record start of traffic-generator storage refactor 0.10-to-0.20 equivalence recheck, Michael Tan, 20260908
+
+## Completed 2026-09-08: Traffic-Generator Storage Refactor 0.10–0.20 Equivalence Recheck
+
+- Updated `scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh` only to compile `src/board_ila/noc_board_ila_debug.sv`, which the current board top instantiates. No traffic generator, monitor, routing, queue policy, or statistical RTL was changed for this recheck.
+- WSL Vivado 2025.2 ran `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`. Results are in `vivado_sim_wsl/tb_noc_board_latency_monitor_rate_sweep_011_to_020_sim/board_latency_results.txt`; every 0.11–0.20 point passed and exactly matches the earlier documented enqueued/tails counts, total latency, and average latency: `28.149`, `37.650`, `57.399`, `85.318`, `125.131`, `168.746`, `215.469`, `265.748`, `322.862`, and `371.774` cycles. All points retain zero queue-full, unmatched-tail, timestamp-overwrite, and mesh-error counts.
+- Together with the exact wrapper 0.10 baseline (`2525` packets, `60569` total cycles, `23.987` cycles), this confirms that the monitor and traffic-generator storage-dimension refactors preserve the tested 0.10–0.20 functional and performance behavior. No Windows Vivado synthesis was run.
+
+//Modify record completed traffic-generator storage refactor 0.10-to-0.20 equivalence recheck, Michael Tan, 20260908
+
+## Active Task Started 2026-09-08: Post-Storage-Refactor Windows ILA-Top Synthesis Measurement
+
+- Before designing XDC, rerun only `synth_design` for `noc_board_ila_top` with licensed Windows Vivado 2019.2 targeting exactly `xcvu440-flga2892-2-e`. Record wall time, ILA/probe acceptance, utilization, and synthesis warnings.
+- This deliberately has no XDC, implementation, bitstream, or board download. Its purpose is a pre-XDC RTL/ILA-netlist check and a measured comparison against the earlier slow synthesis attempt.
+
+//Modify record start of post-storage-refactor Windows ILA-top synthesis measurement, Michael Tan, 20260908
+
+## Completed 2026-09-08: Post-Storage-Refactor Windows ILA-Top Synthesis Measurement
+
+- Licensed Windows Vivado 2019.2 ran `scripts/synthesis/run_noc_board_ila_top_synthesis.ps1` for `xcvu440-flga2892-2-e`. The generated 16-probe `ila_0` IP was accepted, but `synth_design` failed during RTL elaboration after CPU `24 s`, elapsed `27 s`, and about `2381 MB` peak memory; no utilization/timing report or DCP was produced.
+- The concrete blocker is `ERROR: [Synth 8-4556]`: packed monitor variable `enqueue_cycle` is `25×2048×32 = 1,638,400` bits, exceeding the Vivado 2019.2 per-variable `1,000,000-bit` limit. This is independent of XDC, ILA probe definitions, or the verified behavior. The next code task must split timestamp storage into independent banks below the limit while preserving source/sequence lookup and then repeat the 0.10–0.20 WSL equivalence tests before another Windows synthesis.
+
+//Modify record failed post-storage-refactor Windows ILA-top synthesis measurement, Michael Tan, 20260908
+
+## Active Task Started 2026-09-08: Monitor Timestamp Dual-Bank Synthesis-Limit Refactor
+
+- Split only `enqueue_cycle` by packet-sequence MSB into two independent `25×1024×32` timestamp banks (`819200` bits each), retaining the full 25-by-2048 source/sequence lookup space. Keep packet IDs, valid/measurement tracking, statistics, traffic generation, and all external monitor ports unchanged.
+- Verify the exact 0.10 wrapper baseline, the complete 0.11–0.20 sweep, then rerun licensed Windows Vivado 2019.2 synthesis for `xcvu440-flga2892-2-e`. No XDC, implementation, bitstream, or board download is within this task.
+- WSL verification is complete: `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` retained the exact `2525`/`60569`/zero-exception 0.10 baseline, and `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh` retained every prior 0.11–0.20 enqueued/tails count, total latency, average latency, and zero error counter. Source must now be committed, pushed, and synchronized to Windows before target-device synthesis.
+
+//Modify record start of monitor timestamp dual-bank synthesis-limit refactor, Michael Tan, 20260908
+
 ## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
 
 - Create a reusable plot under `scripts/simulation/` and a PNG under `file/仿真分析/` from the completed ten-point 0.11–0.20 comparison data.
