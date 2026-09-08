@@ -38,7 +38,7 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 ## 周报与工作计划记录规则
 
-当需要编写周报或下周工作计划时，统一使用 `file/周报/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。
+当需要编写周报或下周工作计划时，统一使用 `file/周报/2026-08-下周工作计划.txt` 的简洁格式，按“周一上午”至“周五下午”逐项安排。计划除研发工作外，还应包含党建学习/材料整理及公司融资资料整理、数据核对或沟通协调；如有当周明确事项，则以实际事项为准。周报和下周工作计划的每条事项应为一条短句，篇幅不超过“完成板级随机流量发生器的均匀非自身目的地址映射与 LFSR 去相关方案整理，核对种子分散。”这一示例；MBO 的指标描述和衡量标准可按表格格式保留必要的完整说明。每次新建或修改该目录中的周报、工作计划或 MBO 文档后，均自动同步对应文件到 Windows 工作副本 `E:\\Codex-Project\\NoC-XY\\file\\周报\\`，并确认目标文件存在；此同步不依赖 Git。<!-- Modify scope concise weekly-item length and retain Windows synchronization rule, Michael Tan, 20260828 -->
 
 <!-- Modify classify weekly-plan records under file/周报, Michael Tan, 20260825 -->
 
@@ -129,6 +129,82 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 - 使用 Linux Vivado 2025.2 运行 `bash scripts/simulation/run_tb_noc_board_latency_monitor.sh` 验证通过；重新生成的波形数据库是 `vivado_sim_wsl/tb_noc_board_latency_monitor_sim/tb_noc_board_latency_monitor_sim.wdb`。`xsim.log` 结果仍为 `PASSED enqueued=2867 tails=2232 unmatched=0 overwrites=0 total_latency=393419 mesh_errors=0`，tb 同时检查了新增信号的减法关系。
 
 <!-- Modify record completed latency-monitor waveform-debug task, Michael Tan, 20260820 -->
+
+## 2026-08-27 板级延迟统计窗口对齐（进行中）
+
+- 本任务使可综合板级流量发生器和延迟监控器采用性能 TB 的窗口定义：200 周期 Warm-up、1000 周期 Measurement、停止新生包后的最多 8000 周期 Drain。
+- Warm-up 包仍保留时间戳并在 TAIL 到达时正常匹配，但只有 Measurement 窗口内成功进入源队列的包计入包数与累计延迟；原有 1000 周期冒烟 TB 保持不变，另建专用窗口对齐 TB、脚本及结果目录。
+- 本任务不包含 ILA IP、XDC、Windows 综合/实现、位流或上板下载。<!-- Modify record start of board latency statistics-window alignment task, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级延迟统计窗口对齐完成
+
+- 更新 `src/board_ila/noc_board_ila_top.sv`、`noc_board_traffic_generator.sv` 和 `noc_board_latency_monitor.sv`：可综合顶层现依次执行 200 周期 Warm-up、1000 周期 Measurement、最多 8000 周期 Drain；Drain 内停止新生 packet、继续发送既有 packet。监控器继续保存 Warm-up 包时间戳以正确匹配其 TAIL，但仅将 Measurement 窗口内成功进入源队列的包计入包数和延迟；并新增 Measurement 窗口的源队列满计数。
+- 新增 `testbench/tb_noc_board_latency_monitor_windowed.sv`、`scripts/simulation/run_tb_noc_board_latency_monitor_windowed.sh`，结果目录为 `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_sim/`。为与性能 TB 的队列容量一致，新 TB 将可参数化顶层的 `SOURCE_QUEUE_DEPTH` 覆盖为 2048；实际板级顶层默认值仍为 64。
+- 使用 Linux Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed.sh`。沙箱内先出现已知 xsim Tcl 快照异常，允许的沙箱外重跑通过：`enqueued=2688`、`queue_full=0`、`tails=2688`、`unmatched=0`、`overwrites=0`、`mesh_errors=0`，累计延迟 `666712` cycles，平均延迟 `248.032` cycles。说明 Measurement 包已在 Drain 内全部收齐，统计窗口和源队列容量均已与旧性能 TB 对齐。
+- 此平均延迟仍不同于历史性能 TB 的 `22.565` cycles：板级发生器按每节点独立 LFSR 产生注入与目的地址，而性能 TB 使用 `$urandom` 序列及不同的目的地址采样；因此这是流量模型的差异，不是统计窗口截断、队列满或 packet ID 匹配错误。未加入 ILA IP、XDC、Windows 综合/实现、位流或上板下载。<!-- Modify record completed board latency statistics-window alignment task, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级 0.01 注入率窗口化诊断（进行中）
+
+- 将新增独立的 0.01 每节点每周期 packet 注入率窗口化 TB，窗口仍为 200 周期 Warm-up、1000 周期 Measurement、8000 周期 Drain，且沿用 2048 项源队列以便与性能 TB 比较。
+- 板级顶层的注入门限将参数化；该新 TB 使用 `655/65536≈0.01`，默认板级负载保持 `6554/65536≈0.1`。本实验用于诊断 0.1 统计值偏高，不涉及性能优化或 ILA/XDC/实现。<!-- Modify record start of 0.01 board windowed latency diagnostic, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级 0.01 注入率窗口化诊断完成
+
+- 已将 `src/board_ila/noc_board_ila_top.sv` 的 `INJECTION_THRESHOLD` 参数化，默认仍为 `16'd6554≈0.1`；新增 `testbench/tb_noc_board_latency_monitor_windowed_rate_001.sv` 和 `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_rate_001.sh`，其独立结果目录为 `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_rate_001_sim/`。
+- 在 Linux Vivado 2025.2 沙箱外执行 `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed_rate_001.sh` 通过。`xsim.log`：`rate_threshold=655`、`enqueued=356`、`queue_full=0`、`tails=356`、`unmatched=0`、`overwrites=0`、`mesh_errors=0`、累计延迟 `8563` cycles、平均延迟 `24.053` cycles。
+- 相比 0.1 的 `248.032` cycles，约 0.01 负载下降至 `24.053` cycles，且所有统计包均在 Drain 内完成。这表明延迟监控器、时间戳匹配和 Drain 统计在低负载下工作正常；0.1 偏高仍需从流量/拥塞模型继续分析，而不是未完成包、队列满或 packet ID 匹配错误。未加入 ILA IP、XDC、Windows 综合/实现、位流或上板下载。<!-- Modify record completed 0.01 board windowed latency diagnostic, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级均匀目的地址映射诊断（进行中）
+
+- 将替换板级发生器原有的 3-bit `% 5` 目的坐标映射：该映射使坐标 0、1、2 的概率各为 25%，坐标 3、4 的概率各为 12.5%，且命中自身后的 x 轴修正会进一步偏置流量。
+- 新映射直接在 24 个非自身目的节点中选择；新增独立的 0.1 窗口化 TB、脚本和结果目录，保留原偏置映射结果用于对照。<!-- Modify record start of uniform board destination-mapping diagnostic, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级均匀目的地址映射诊断完成
+
+- 已更新 `src/board_ila/noc_board_traffic_generator.sv`：先在 24 个非自身节点编号中选择，再转换为 x/y 坐标；不再从 3-bit 数值做 `% 5`，也不再使用仅改变 x 坐标的自身目的地修正。完整 LFSR 状态对 24 取模的剩余偏差最多为每个目的节点一个状态，远小于已消除的原坐标偏置。
+- 新增 `testbench/tb_noc_board_latency_monitor_windowed_uniform_dest.sv` 和 `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_uniform_dest.sh`。在 Linux Vivado 2025.2 沙箱外执行该脚本通过；结果目录为 `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_uniform_dest_sim/`，`xsim.log` 为：`enqueued=2688`、`queue_full=0`、`tails=2688`、`unmatched=0`、`overwrites=0`、`mesh_errors=0`、累计延迟 `285493` cycles、平均延迟 `106.210` cycles。
+- 在相同 0.1 门限及统计窗口下，平均延迟从偏置映射的 `248.032` 降至 `106.210` cycles，证明空间目的地址偏置是严重拥塞的重要来源；但仍高于历史 `$urandom` 性能 TB 的 `22.565` cycles，后续需单独分析 LFSR 注入时刻相关性及有限窗口的流量分布。未加入 ILA IP、XDC、Windows 综合/实现、位流或上板下载。<!-- Modify record completed uniform board destination-mapping diagnostic, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级注入 LFSR 去相关化（进行中）
+
+- RTL 等价统计确认：旧的相邻种子 `1..25` 与每周期仅前进一步的注入 LFSR，在 1000 周期 Measurement 内出现 10 次 25 节点同时注入、1444 次同节点连续两周期注入，远偏离独立 0.1 随机流量。
+- 将改为分散的确定性非零种子，并在每个活跃周期中将注入 LFSR 前进 16 步后再比较门限。只读重放预计最大并发约为 9、同节点连续注入约为 230（独立 0.1 随机的期望约 250）；将用独立 TB/脚本/结果目录验证。<!-- Modify record start of board injection LFSR decorrelation task, Michael Tan, 20260827 -->
+
+## 2026-08-27 板级注入 LFSR 去相关化完成
+
+- 已更新 `src/board_ila/noc_board_traffic_generator.sv`：每个源节点使用由 `16'h9e37 * (source_index + 1)` 派生的分散确定性非零种子；每个活跃周期先以既有 XOR/移位 LFSR 前进 16 步，再作注入门限比较。该实现不引入运行时乘法器、保持约 0.1 门限，并继续使用已修正的均匀非自身目的地址映射。
+- 新增 `testbench/tb_noc_board_latency_monitor_windowed_decorrelated_lfsr.sv` 和 `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_decorrelated_lfsr.sh`。在 Linux Vivado 2025.2 沙箱外执行该脚本通过；结果目录为 `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_decorrelated_lfsr_sim/`，`xsim.log`：`enqueued=2525`、`queue_full=0`、`tails=2525`、`unmatched=0`、`overwrites=0`、`mesh_errors=0`、累计延迟 `60569` cycles、平均延迟 `23.987` cycles。
+- 在对齐的约 0.1 负载下，仅修正目的地址后的 `106.210` cycles 已进一步降至 `23.987` cycles，接近历史 `$urandom` 性能 TB 的 `2545` 包、`22.565` cycles。剩余差异来自不同的确定性 PRNG 序列，不再是严重同步突发拥塞的伪影。未加入 ILA IP、XDC、Windows 综合/实现、位流或上板下载。<!-- Modify record completed board injection LFSR decorrelation task, Michael Tan, 20260827 -->
+
+## 2026-09-08 板级 0.11–0.20 注入率扫描（进行中）
+
+- 新增独立板级扫描 TB，使用 200 周期 Warm-up、1000 周期 Measurement、8000 周期 Drain、2048 项源队列及已去相关的 LFSR 流量，依次验证每节点 packet 注入率 0.11 至 0.20。
+- 扫描结果将与既有 5×5、4-VC、4-flit 性能 TB 的对应注入率结果对比，并写入 `file/仿真分析/`；不涉及 ILA、XDC、Windows 实现、位流或板卡下载。
+
+<!-- Modify record start of board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908 -->
+
+## 2026-09-08 板级 0.11–0.20 注入率扫描完成
+
+- 新增板级扫描 TB/脚本：`testbench/tb_noc_board_latency_monitor_rate_sweep_011_to_020.sv`、`scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`，逐点运行 0.11–0.20；结果日志在 `vivado_sim_wsl/tb_noc_board_latency_monitor_rate_sweep_011_to_020_sim/`。十点均满足入队包全部在 Drain 内以 TAIL 收齐，且 queue-full、未匹配、时间戳覆盖和 NoC 错误均为零；延迟从 0.11 的 `28.149` cycles 增至 0.20 的 `371.774` cycles。
+- 新增独立性能 TB 扫描 `tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_rate_011_to_020`，并用两点补充 TB 完成 0.19、0.20。性能 TB 的 0.20 延迟为 `401.387` cycles；完整对比见 `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.md`。两组曲线均在约 0.13–0.15 后出现明显排队增长，差异来自可综合 LFSR 与 `$urandom` 流量序列，不是监测或 Drain 失败。
+
+<!-- Modify record completed board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908 -->
+
+## 2026-09-08 板级与性能 TB 对比图（进行中）
+
+- 基于 `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.md` 的十个实测点，新增可复用绘图脚本和双曲线 PNG，直观比较两种流量发生模型在 0.11–0.20 区间的平均延迟。
+
+<!-- Modify record start of board-monitor and performance-TB comparison plot, Michael Tan, 20260908 -->
+
+## 2026-09-08 板级与性能 TB 对比图完成
+
+- 新增 `scripts/simulation/plot_board_monitor_vs_performance_tb_rate_011_to_020.py`；执行 `python3 scripts/simulation/plot_board_monitor_vs_performance_tb_rate_011_to_020.py` 后生成 `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.png`。图像为 1100×719 RGB PNG，双曲线和图例分别标识板级 LFSR 与性能 TB `$urandom`，直观显示二者在 0.13–0.15 后的共同排队增长趋势。
+
+<!-- Modify record completed board-monitor and performance-TB comparison plot, Michael Tan, 20260908 -->
+
+- 同一脚本现额外生成 `file/仿真分析/板级监测模块与性能TB_010至017注入率对比放大图.png`，范围为 0.10–0.17、0–250 cycles，可清楚观察 0.13–0.15 的斜率增大与两种流量模型的差异。<!-- Modify add knee-focused board-monitor and performance-TB comparison plot, Michael Tan, 20260908 -->
+- 同一脚本还生成 `file/仿真分析/板级监测模块与性能TB_000至016注入率对比图.png`，范围为 0–0.16、0–250 cycles；0–0.10 分别保持板级 `23.987` cycles 和性能 TB `22.565` cycles 的水平线，0.11 后使用实测点。<!-- Modify add pre-knee horizontal-reference comparison plot, Michael Tan, 20260908 -->
+- 三张对比图已重绘为 800×800 的近似正方形 PNG，提高纵轴延迟变化的可读性。<!-- Modify use square comparison-plot geometry, Michael Tan, 20260908 -->
 
 ## 标准目录结构
 

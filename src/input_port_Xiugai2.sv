@@ -38,8 +38,10 @@ module input_port #(
     logic [VC_NUM-1:0] read_cmd;
     logic [VC_NUM-1:0] write_cmd;
 
+    /* Michael Tan, 20260617， from Zhanglu code
     logic [VC_SIZE-1:0] sa_sel_vc_reg;
     logic sa_valid_reg;
+    */
 
     genvar vc;
     generate
@@ -86,6 +88,8 @@ module input_port #(
         .out_port_o(out_port_cmd)
     );
 
+    /* 
+    // Michael Tan, 20260617， from Zhanglu code
     always_ff @(posedge clk or posedge rst)
     begin
         if(rst)
@@ -99,6 +103,7 @@ module input_port #(
             sa_valid_reg        <= sa_valid_i;
         end
     end
+    */
 
     /*
     Combinational logic:
@@ -122,8 +127,8 @@ module input_port #(
         if(sa_valid_i)
             read_cmd[sa_sel_vc_i] = 1;
 
-        //xb_flit_o = data_out[sa_sel_vc_reg];//Original, Michael Tan, 20260617
-        xb_flit_o = data_out[sa_sel_vc_i];//Modify to align crossbar flit with current SA-selected VC, Michael Tan, 20260617
+        //xb_flit_o = data_out[sa_sel_vc_reg];// Michael Tan, 20260617, from Zhanglu code
+        xb_flit_o = data_out[sa_sel_vc_i];//Original, Modify to align crossbar flit with current SA-selected VC, Michael Tan, 20260617
     end
 
 endmodule

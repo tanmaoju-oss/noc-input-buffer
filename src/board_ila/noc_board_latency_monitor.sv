@@ -9,11 +9,14 @@ module noc_board_latency_monitor #(
 ) (
     input logic clk,
     input logic rst,
+    input logic measurement_enable_i,//Modify accept the board-top measurement-window qualifier, Michael Tan, 20260827
     input logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_enqueued_i,
+    input logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_queue_full_i,//Modify receive source-queue rejection events for comparable statistics, Michael Tan, 20260827
     input logic [HEAD_PAYLOAD_SIZE-1:0] enqueued_packet_id_i [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0],
     input flit_t [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_data_i,
     input logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_valid_i,
     output logic [COUNTER_WIDTH-1:0] packets_enqueued_o,
+    output logic [COUNTER_WIDTH-1:0] queue_full_o,//Modify expose measurement-window source-queue-full count, Michael Tan, 20260827
     output logic [COUNTER_WIDTH-1:0] tails_received_o,
     output logic [COUNTER_WIDTH-1:0] unmatched_tails_o,
     output logic [COUNTER_WIDTH-1:0] timestamp_overwrites_o,
@@ -36,9 +39,11 @@ module noc_board_latency_monitor #(
     logic [COUNTER_WIDTH-1:0] cycle_counter;
     logic [COUNTER_WIDTH-1:0] enqueue_cycle [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
     logic entry_valid [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
+    logic entry_is_measured [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0];
 
     always_ff @(posedge clk) begin : latency_measurement
         integer enqueue_increment;
+        integer queue_full_increment;
         integer tail_increment;
         integer unmatched_increment;
         integer overwrite_increment;
@@ -50,6 +55,7 @@ module noc_board_latency_monitor #(
         if (rst) begin
             cycle_counter <= '0;
             packets_enqueued_o <= '0;
+            queue_full_o <= '0;
             tails_received_o <= '0;
             unmatched_tails_o <= '0;
             timestamp_overwrites_o <= '0;
@@ -64,11 +70,13 @@ module noc_board_latency_monitor #(
             for (int source = 0; source < SOURCE_COUNT; source++) begin
                 for (int sequence_index = 0; sequence_index < TRACK_TABLE_DEPTH; sequence_index++) begin
                     entry_valid[source][sequence_index] <= 1'b0;//Modify invalidate all timestamp slots during board reset, Michael Tan, 20260817
+                    entry_is_measured[source][sequence_index] <= 1'b0;//Modify clear per-packet measurement-window qualification during board reset, Michael Tan, 20260827
                 end
             end
         end else begin
             cycle_counter <= cycle_counter + 1'b1;
             enqueue_increment = 0;
+            queue_full_increment = 0;
             tail_increment = 0;
             unmatched_increment = 0;
             overwrite_increment = 0;
@@ -78,12 +86,16 @@ module noc_board_latency_monitor #(
 
             for (int x = 0; x < MESH_SIZE_X; x++) begin
                 for (int y = 0; y < MESH_SIZE_Y; y++) begin
+                    if (measurement_enable_i && packet_queue_full_i[x][y])
+                        queue_full_increment = queue_full_increment + 1;//Modify count only measurement-window offers rejected by the bounded source queue, Michael Tan, 20260827
                     if (packet_enqueued_i[x][y]) begin
                         if (entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]])
                             overwrite_increment = overwrite_increment + 1;//Modify flag timestamp-table reuse before an older same-ID packet reached TAIL, Michael Tan, 20260817
                         entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= 1'b1;//Modify timestamp every accepted source-queue entry by its encoded source and sequence, Michael Tan, 20260817
+                        entry_is_measured[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= measurement_enable_i;//Modify retain whether this accepted packet belongs to the measurement window, Michael Tan, 20260827
                         enqueue_cycle[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][PACKET_SEQUENCE_WIDTH-1:0]] <= cycle_counter;
-                        enqueue_increment = enqueue_increment + 1;
+                        if (measurement_enable_i)
+                            enqueue_increment = enqueue_increment + 1;//Modify count only accepted source-queue entries created during the measurement window, Michael Tan, 20260827
                     end
 
                     if (local_valid_i[x][y] && (local_data_i[x][y].flit_label == TAIL)) begin
@@ -92,8 +104,11 @@ module noc_board_latency_monitor #(
                         tail_sequence = tail_packet_id[PACKET_SEQUENCE_WIDTH-1:0];
                         if ((tail_source_id < SOURCE_COUNT) && entry_valid[tail_source_id][tail_sequence]) begin
                             entry_valid[tail_source_id][tail_sequence] <= 1'b0;
-                            latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_sequence]);
-                            tail_increment = tail_increment + 1;
+                            entry_is_measured[tail_source_id][tail_sequence] <= 1'b0;//Modify clear the qualification bit together with every matched timestamp entry, Michael Tan, 20260827
+                            if (entry_is_measured[tail_source_id][tail_sequence]) begin
+                                latency_increment = latency_increment + (cycle_counter - enqueue_cycle[tail_source_id][tail_sequence]);
+                                tail_increment = tail_increment + 1;//Modify accumulate only TAILs whose accepted source-queue entry was in the measurement window, Michael Tan, 20260827
+                            end
                             debug_tail_event_o <= 1'b1;//Modify expose a matched TAIL event for direct latency waveform correlation, Michael Tan, 20260820
                             debug_tail_packet_id_o <= tail_packet_id;
                             debug_tail_source_id_o <= tail_source_id;
@@ -108,6 +123,7 @@ module noc_board_latency_monitor #(
             end
 
             packets_enqueued_o <= packets_enqueued_o + enqueue_increment;
+            queue_full_o <= queue_full_o + queue_full_increment;
             tails_received_o <= tails_received_o + tail_increment;
             unmatched_tails_o <= unmatched_tails_o + unmatched_increment;
             timestamp_overwrites_o <= timestamp_overwrites_o + overwrite_increment;

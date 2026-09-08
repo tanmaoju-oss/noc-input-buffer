@@ -47,6 +47,8 @@ file/*
 # Modify classify file records and track code analyses, Michael Tan, 20260825
 
 # Temporary/editor files
+# Modify ignore local Ctags workspace navigation index, Michael Tan, 20260825
+tags
 # Modify ignore generated Python bytecode caches, Michael Tan, 20260729
 __pycache__/
 *.py[cod]

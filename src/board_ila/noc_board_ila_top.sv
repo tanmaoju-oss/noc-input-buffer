@@ -1,7 +1,13 @@
 import noc_params::*;
 
 //Modify add DDR-free board-level NoC top shell, Michael Tan, 20260804
-module noc_board_ila_top (
+module noc_board_ila_top #(
+    parameter integer WARMUP_CYCLES = 200,
+    parameter integer MEASURE_CYCLES = 1000,
+    parameter integer DRAIN_CYCLES = 8000,//Modify make the bounded drain duration configurable for a TB-aligned traffic window, Michael Tan, 20260827
+    parameter integer SOURCE_QUEUE_DEPTH = 64,//Modify retain the 64-entry board default while permitting a reference-TB capacity override, Michael Tan, 20260827
+    parameter logic [15:0] INJECTION_THRESHOLD = 16'd6554//Modify retain the approximate 0.1 board default while permitting diagnostic injection-rate overrides, Michael Tan, 20260827
+) (
     input logic l_pad_clk_p,
     input logic l_pad_clk_n,
     input logic l_pad_rst_b
@@ -12,6 +18,11 @@ module noc_board_ila_top (
     logic noc_clk;
     logic [1:0] reset_sync;
     logic noc_rst;
+    typedef enum logic [1:0] {WINDOW_WARMUP, WINDOW_MEASURE, WINDOW_DRAIN, WINDOW_DONE} traffic_window_phase_t;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) traffic_window_phase_t traffic_window_phase;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic [31:0] traffic_window_cycle_count;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic traffic_generate_enable;
+    (* MARK_DEBUG = "TRUE", KEEP = "TRUE" *) logic monitor_measurement_enable;
 
     IBUFDS #(
         .DIFF_TERM("FALSE"),
@@ -38,6 +49,48 @@ module noc_board_ila_top (
 
     assign noc_rst = ~reset_sync[1];
 
+    //Modify reproduce the performance-TB warm-up, measurement, and bounded-drain traffic windows in synthesizable board RTL, Michael Tan, 20260827
+    always_ff @(posedge noc_clk) begin
+        if (noc_rst) begin
+            traffic_window_phase <= WINDOW_WARMUP;
+            traffic_window_cycle_count <= '0;
+        end else begin
+            unique case (traffic_window_phase)
+                WINDOW_WARMUP: begin
+                    if (traffic_window_cycle_count == WARMUP_CYCLES - 1) begin
+                        traffic_window_phase <= WINDOW_MEASURE;
+                        traffic_window_cycle_count <= '0;
+                    end else begin
+                        traffic_window_cycle_count <= traffic_window_cycle_count + 1'b1;
+                    end
+                end
+                WINDOW_MEASURE: begin
+                    if (traffic_window_cycle_count == MEASURE_CYCLES - 1) begin
+                        traffic_window_phase <= WINDOW_DRAIN;
+                        traffic_window_cycle_count <= '0;
+                    end else begin
+                        traffic_window_cycle_count <= traffic_window_cycle_count + 1'b1;
+                    end
+                end
+                WINDOW_DRAIN: begin
+                    if (traffic_window_cycle_count == DRAIN_CYCLES - 1) begin
+                        traffic_window_phase <= WINDOW_DONE;
+                        traffic_window_cycle_count <= '0;
+                    end else begin
+                        traffic_window_cycle_count <= traffic_window_cycle_count + 1'b1;
+                    end
+                end
+                default: begin
+                    traffic_window_phase <= WINDOW_DONE;
+                    traffic_window_cycle_count <= traffic_window_cycle_count;
+                end
+            endcase
+        end
+    end
+
+    assign traffic_generate_enable = (traffic_window_phase == WINDOW_WARMUP) || (traffic_window_phase == WINDOW_MEASURE);//Modify permit new packets only before the drain window, Michael Tan, 20260827
+    assign monitor_measurement_enable = (traffic_window_phase == WINDOW_MEASURE);//Modify qualify latency statistics only during the measurement window, Michael Tan, 20260827
+
     //Modify provide the 5x5 mesh local interfaces for later traffic-generator integration, Michael Tan, 20260804
     flit_t [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_data_i;
     logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_valid_i;
@@ -49,8 +102,10 @@ module noc_board_ila_top (
     logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][VC_NUM-1:0] local_allocatable_o;
     logic [VC_NUM-1:0] mesh_error [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][PORT_NUM-1:0];
     logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_enqueued;
+    logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_queue_full;//Modify retain source-queue rejection pulses for monitor accounting, Michael Tan, 20260827
     logic [HEAD_PAYLOAD_SIZE-1:0] enqueued_packet_id [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0];
     logic [31:0] monitor_packets_enqueued;
+    logic [31:0] monitor_queue_full;//Modify retain measurement-window source-queue-full count for WDB and later ILA, Michael Tan, 20260827
     logic [31:0] monitor_tails_received;
     logic [31:0] monitor_unmatched_tails;
     logic [31:0] monitor_timestamp_overwrites;
@@ -71,16 +126,18 @@ module noc_board_ila_top (
     noc_board_traffic_generator #(
         .MESH_SIZE_X(MESH_SIZE_X),
         .MESH_SIZE_Y(MESH_SIZE_Y),
-        .SOURCE_QUEUE_DEPTH(64),
+        .SOURCE_QUEUE_DEPTH(SOURCE_QUEUE_DEPTH),//Modify permit the windowed performance-equivalence tb to use the reference source-queue capacity while retaining the 64-entry board default, Michael Tan, 20260827
         .PACKET_FLIT_NUM(4),
-        .INJECTION_THRESHOLD(16'd6554)
+        .INJECTION_THRESHOLD(INJECTION_THRESHOLD)//Modify connect the parameterized board injection-rate threshold to the synthesizable traffic generator, Michael Tan, 20260827
     ) board_traffic_generator (
         .clk(noc_clk),
         .rst(noc_rst),
+        .generate_enable_i(traffic_generate_enable),
         .local_on_off_i(local_on_off_o),
         .local_data_o(local_data_i),
         .local_valid_o(local_valid_i),
         .packet_enqueued_o(packet_enqueued),
+        .packet_queue_full_o(packet_queue_full),
         .enqueued_packet_id_o(enqueued_packet_id)
     );
 
@@ -111,11 +168,14 @@ module noc_board_ila_top (
     ) board_latency_monitor (
         .clk(noc_clk),
         .rst(noc_rst),
+        .measurement_enable_i(monitor_measurement_enable),
         .packet_enqueued_i(packet_enqueued),
+        .packet_queue_full_i(packet_queue_full),
         .enqueued_packet_id_i(enqueued_packet_id),
         .local_data_i(local_data_o),
         .local_valid_i(local_valid_o),
         .packets_enqueued_o(monitor_packets_enqueued),
+        .queue_full_o(monitor_queue_full),
         .tails_received_o(monitor_tails_received),
         .unmatched_tails_o(monitor_unmatched_tails),
         .timestamp_overwrites_o(monitor_timestamp_overwrites),

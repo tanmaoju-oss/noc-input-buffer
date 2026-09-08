@@ -85,6 +85,8 @@ noc-input-buffer/
 
 - Reply mainly in concise Chinese.
 - 当用户要求编写周报或下周工作计划时，使用与 `file/周报/2026-08-下周工作计划.txt` 一致的简洁格式：按“周一上午”至“周五下午”逐项列出。除项目研发任务外，默认纳入党建学习/材料整理及公司融资资料整理/沟通等工作安排；如用户提供了具体事项，以用户事项为准。//Modify classify weekly records under file/周报, Michael Tan, 20260825
+- 周报和下周工作计划中的每一条事项均应保持简洁，篇幅不得超过“完成板级随机流量发生器的均匀非自身目的地址映射与 LFSR 去相关方案整理，核对种子分散。”这一示例的长度；优先使用一条短句表达任务、对象和必要结果。MBO 的指标描述和衡量标准可按其表格格式保留必要的完整说明。//Modify scope concise weekly-item length rule to reports and plans, Michael Tan, 20260828
+- 每次新建或修改 `file/周报/` 中的周报、工作计划或 MBO 文档后，必须自动同步对应文件到 Windows 工作副本 `E:\\Codex-Project\\NoC-XY\\file\\周报\\`，并确认目标文件存在；该同步独立于 Git，适用于被忽略的本地文档。//Modify add automatic weekly-document synchronization to Windows, Michael Tan, 20260828
 - Do not modify source files when the user asks only for analysis or says not to modify yet.
 - Before starting any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` when the task changes project state or produces reusable results.//Modify add mandatory memory-sync rule before future code/tb/simulation work, Michael Tan, 20260626
 - After finishing any code feature change, testbench creation, or Vivado simulation task, update both `AGENTS.md` and `README.md` with changed files, run commands, result paths, and important simulation results.//Modify add mandatory post-task documentation rule, Michael Tan, 20260626
@@ -168,6 +170,82 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 4. Keep the documentation concise; only record reusable state, not temporary exploration noise.
 
 //Modify add explicit documentation synchronization workflow, Michael Tan, 20260626
+
+## Active Task Started 2026-08-27: Board Latency Statistics Window Alignment
+
+- Align the synthesizable board traffic workload and latency monitor with the reusable 5x5, 4-VC, four-flit performance-TB window definition: 200 warm-up cycles, 1000 measurement cycles, then a bounded 8000-cycle drain with no new packet generation.
+- Retain timestamps for warm-up packets so their TAILs remain matchable, but count packets and latency only when their accepted source-queue entry occurred during the measurement window. Keep the existing 1000-cycle monitor smoke TB unchanged; add a dedicated windowed TB, runner, and WSL result directory.
+- This task changes no ILA IP, XDC, Windows implementation, bitstream, or board download scope.//Modify record start of board latency statistics-window alignment task, Michael Tan, 20260827
+
+## Completed 2026-08-27: Board Latency Statistics Window Alignment
+
+- Updated `src/board_ila/noc_board_ila_top.sv`, `noc_board_traffic_generator.sv`, and `noc_board_latency_monitor.sv`. The synthesizable top now runs 200 warm-up cycles, 1000 measurement cycles, and a bounded 8000-cycle drain; no new packets are generated in drain. The monitor timestamps all accepted packets so warm-up TAILs remain matchable, but only accumulates packets and latency whose source-queue entry was accepted during measurement. It also reports measurement-window queue-full events. The board default source-queue depth remains 64, while the new equivalence TB can parameterize it to match the reference TB depth of 2048.
+- Added `testbench/tb_noc_board_latency_monitor_windowed.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor_windowed.sh`. Linux Vivado 2025.2 verification used `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed.sh`; the sandbox attempt reproduced the known xsim Tcl snapshot exception, then the approved outside-sandbox run passed. Results are in `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_sim/`, with `xsim.log` reporting `[TB_BOARD_MONITOR_WINDOWED] PASSED warmup=200 measure=1000 drain=8000 enqueued=2688 queue_full=0 tails=2688 unmatched=0 overwrites=0 total_latency=666712 avg_latency_x1000=248032 mesh_errors=0`.
+- The statistics-window definition and source-queue capacity now match the reusable 0.1 performance-TB point, and every measurement packet was drained. Its `248.032`-cycle average does not match the historical `22.565`-cycle TB result because the board generator intentionally uses independent per-source LFSRs rather than the performance TB's `$urandom` sequence and destination sampling; this is an implementation-model difference, not a window truncation or monitor correlation failure. No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created.//Modify record completed board latency statistics-window alignment task, Michael Tan, 20260827
+
+## Active Task Started 2026-08-27: Board 0.01 Injection-Rate Windowed Check
+
+- Add a separate 0.01 per-node packet-generation-rate version of the windowed board latency-monitor verification, retaining the same 200 warm-up, 1000 measurement, and 8000 drain settings and the reference-TB 2048-entry source queue. Parameterize the board-top injection threshold so this TB can use `655/65536` without changing the board default `6554/65536` (approximately 0.1).
+- This is a diagnosis experiment for the unexpectedly high 0.1 windowed average, not a performance optimization or an ILA/XDC/implementation task.//Modify record start of 0.01 board windowed latency diagnostic, Michael Tan, 20260827
+
+## Completed 2026-08-27: Board 0.01 Injection-Rate Windowed Check
+
+- Updated `src/board_ila/noc_board_ila_top.sv` so `INJECTION_THRESHOLD` is a parameter with the existing `16'd6554` (approximately 0.1) board default. Added `testbench/tb_noc_board_latency_monitor_windowed_rate_001.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_rate_001.sh`; its isolated WSL result directory is `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_rate_001_sim/`.
+- Linux Vivado 2025.2 verification ran `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed_rate_001.sh` outside the Codex sandbox. `xsim.log` reports `[TB_BOARD_MONITOR_RATE_001] PASSED rate_threshold=655 warmup=200 measure=1000 drain=8000 enqueued=356 queue_full=0 tails=356 unmatched=0 overwrites=0 total_latency=8563 avg_latency_x1000=24053 mesh_errors=0`; the average is `24.053` cycles.
+- Reducing board injection rate to approximately 0.01 reduced the fully drained average from the 0.1 run's `248.032` to `24.053` cycles. This supports that the monitor and drain calculation work at low load; the high 0.1 result remains a traffic/congestion-model investigation rather than a timestamp, correlation, queue-full, or incomplete-drain failure. No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created.//Modify record completed 0.01 board windowed latency diagnostic, Michael Tan, 20260827
+
+## Active Task Started 2026-08-27: Uniform Board Destination Mapping Check
+
+- Replace the board generator's biased three-bit `% 5` destination-coordinate mapping with direct selection from the 24 non-self node indices. The old mapping made coordinates 0, 1, and 2 twice as likely as coordinates 3 and 4, and its self-destination correction introduced a further x-direction bias.
+- Add an independent 0.1 windowed TB, runner, and result directory to measure the corrected traffic model without overwriting the earlier biased-mapping result.//Modify record start of uniform board destination-mapping diagnostic, Michael Tan, 20260827
+
+## Completed 2026-08-27: Uniform Board Destination Mapping Check
+
+- Updated `src/board_ila/noc_board_traffic_generator.sv`: a destination is now selected by mapping the full LFSR state across the 24 non-self node indices, then converting that node index to x/y. This removes the former 3-bit `% 5` coordinate bias (0/1/2 each 25%, 3/4 each 12.5%) and the x-only self-destination correction. The residual full-state modulo imbalance is at most one LFSR state per destination and is negligible compared with the removed bias.
+- Added `testbench/tb_noc_board_latency_monitor_windowed_uniform_dest.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_uniform_dest.sh`. Linux Vivado 2025.2 verification used `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed_uniform_dest.sh` outside the Codex sandbox. Its result directory is `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_uniform_dest_sim/`; `xsim.log` reports `[TB_BOARD_MONITOR_UNIFORM_DEST] PASSED warmup=200 measure=1000 drain=8000 enqueued=2688 queue_full=0 tails=2688 unmatched=0 overwrites=0 total_latency=285493 avg_latency_x1000=106210 mesh_errors=0`.
+- At the same 0.1 threshold and statistics window, correcting destination distribution lowered the fully drained average from `248.032` to `106.210` cycles. It confirms spatial destination bias was a major congestion source, but this remains above the historical `$urandom` TB point of `22.565` cycles; LFSR temporal correlation and finite-window traffic distribution remain separate investigation items. No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created.//Modify record completed uniform board destination-mapping diagnostic, Michael Tan, 20260827
+
+## Active Task Started 2026-08-27: Board Injection LFSR Decorrelation
+
+- Replace adjacent `1..25` LFSR seeds and one-step-per-cycle sampling, which produced ten 25-node simultaneous injections and 1444 adjacent-cycle injections in a 1000-cycle measurement window. Use deterministically dispersed nonzero seeds and advance each injection LFSR 16 steps per active cycle before threshold comparison.
+- A read-only RTL-equivalent replay predicts a maximum concurrent injection count of approximately 9 and approximately 230 adjacent-cycle injections (the independent 0.1 expectation is approximately 250). Add a dedicated corrected-traffic TB, runner, and result directory, retaining previous results.//Modify record start of board injection LFSR decorrelation task, Michael Tan, 20260827
+
+## Completed 2026-08-27: Board Injection LFSR Decorrelation
+
+- Updated `src/board_ila/noc_board_traffic_generator.sv`. Each source now uses a deterministic dispersed nonzero seed derived from `16'h9e37 * (source_index + 1)`, and `advance_injection_lfsr` applies 16 existing XOR/shift LFSR steps before every active-cycle threshold comparison. This is synthesizable without a runtime multiplier and retains the 0.1 threshold; the already-corrected direct non-self destination mapping remains in use.
+- Added `testbench/tb_noc_board_latency_monitor_windowed_decorrelated_lfsr.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor_windowed_decorrelated_lfsr.sh`. Linux Vivado 2025.2 verification used `bash scripts/simulation/run_tb_noc_board_latency_monitor_windowed_decorrelated_lfsr.sh` outside the Codex sandbox. The result directory is `vivado_sim_wsl/tb_noc_board_latency_monitor_windowed_decorrelated_lfsr_sim/`; `xsim.log` reports `[TB_BOARD_MONITOR_DECORRELATED] PASSED warmup=200 measure=1000 drain=8000 enqueued=2525 queue_full=0 tails=2525 unmatched=0 overwrites=0 total_latency=60569 avg_latency_x1000=23987 mesh_errors=0`.
+- At the aligned approximately 0.1 workload, average latency fell from `106.210` cycles after only destination correction to `23.987` cycles after injection decorrelation. The result is close to the historical `$urandom` performance-TB reference (`2545` packets, `22.565` cycles); the remaining difference is expected from different deterministic PRNG streams, and is no longer a severe congestion artifact. No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created.//Modify record completed board injection LFSR decorrelation task, Michael Tan, 20260827
+
+## Active Task Started 2026-09-08: Board 0.11–0.20 Injection-Rate Comparison Sweep
+
+- Add an independent board latency-monitor sweep TB and WSL runner covering the ten per-node packet-generation rates from 0.11 through 0.20, retaining 200 warm-up cycles, 1000 measurement cycles, 8000 drain cycles, a 2048-entry source queue, uniform non-self destinations, and decorrelated LFSR injection.
+- Compare each board result against the corresponding reusable 5x5, 4-VC, 4-flit performance-TB result and record the comparison under `file/仿真分析/`.
+- This experiment does not add ILA IP, XDC, Windows synthesis/implementation, bitstream generation, or board download.
+
+//Modify record start of board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908
+
+## Completed 2026-09-08: Board 0.11–0.20 Injection-Rate Comparison Sweep
+
+- Added `testbench/tb_noc_board_latency_monitor_rate_sweep_011_to_020.sv` and `scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`. Linux Vivado 2025.2 was run outside the Codex sandbox because of the known xsim snapshot issue. The ten points used thresholds 7209 through 13107, with results retained as `xsim_110.log` through `xsim_200.log` in `vivado_sim_wsl/tb_noc_board_latency_monitor_rate_sweep_011_to_020_sim/`; all points fully drained with zero queue-full, unmatched-tail, timestamp-overwrite, and mesh-error counts. Board average latency rose from `28.149` cycles at 0.11 to `371.774` cycles at 0.20.
+- Added the independent 0.11–0.20 performance-TB sweep and a 0.19–0.20 completion sweep: `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_rate_011_to_020.sv`, `testbench/tb_mesh_injection_sweep_5x5_noxim_queue_knee_4flit_4vc_rate_019_to_020.sv`, and their paired WSL runners. All performance-TB points fully drained with zero queue-full/errors; the 0.20 result was `401.387` cycles.
+- The complete table and methodology are in `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.md`. The board and performance-TB curves both show pronounced queueing growth after approximately 0.13–0.15; remaining differences are due to deterministic LFSR versus `$urandom` traffic streams, not monitor correlation or drain failure. No ILA IP, XDC, Windows synthesis/implementation, bitstream, or board download was created.
+
+//Modify record completed board 0.11-to-0.20 injection-rate comparison sweep, Michael Tan, 20260908
+
+## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
+
+- Create a reusable plot under `scripts/simulation/` and a PNG under `file/仿真分析/` from the completed ten-point 0.11–0.20 comparison data.
+
+//Modify record start of board-monitor and performance-TB comparison plot, Michael Tan, 20260908
+
+## Completed 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
+
+- Added `scripts/simulation/plot_board_monitor_vs_performance_tb_rate_011_to_020.py`. Running `python3 scripts/simulation/plot_board_monitor_vs_performance_tb_rate_011_to_020.py` generated `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.png`, a visually checked 1100x719 RGB PNG with both ten-point latency curves, legend, and 0.11–0.20 / 0–450-cycle axes.
+- The same command also generates `file/仿真分析/板级监测模块与性能TB_010至017注入率对比放大图.png`, a visually checked 1100x719 RGB PNG with 0.10–0.17 / 0–250-cycle axes that makes the slope increase around 0.13–0.15 clear.//Modify add knee-focused board-monitor and performance-TB comparison plot, Michael Tan, 20260908
+- The same command additionally generates `file/仿真分析/板级监测模块与性能TB_000至016注入率对比图.png`, a visually checked 1100x719 RGB PNG with 0–0.16 / 0–250-cycle axes. Its 0–0.10 horizontal references use the measured board `23.987`-cycle and performance-TB `22.565`-cycle 0.10 values; measured points resume at 0.11.//Modify add pre-knee horizontal-reference comparison plot, Michael Tan, 20260908
+- All three comparison PNGs were redrawn as visually checked 800x800 near-square images to make vertical latency growth easier to read.//Modify use square comparison-plot geometry, Michael Tan, 20260908
+
+//Modify record completed board-monitor and performance-TB comparison plot, Michael Tan, 20260908
 
 ## Completed 2026-08-04: DDR-Free Board Top Step 1
 

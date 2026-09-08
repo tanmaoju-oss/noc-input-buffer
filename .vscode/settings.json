@@ -1,0 +1,9 @@
+{
+  "verilog.ctags.enabled": true,
+  "verilog.ctags.path": "/usr/bin/ctags",
+  "ctags-companion.command": "ctags -R --languages=SystemVerilog --fields=+nKz src testbench",
+  "files.associations": {
+    "*.sv": "systemverilog",
+    "*.svh": "systemverilog"
+  }
+}

@@ -1,0 +1,33 @@
+问：
+RC只在HEAD/HEADTAIL上计算路由。为什么后续BODY/TAIL仍使用与HEAD相同的输出端口，如何实现的？
+
+答：
+一个 packet 的所有 flit 必须沿同一路径、同一下游 VC 转发，否则可能乱序。HEAD 到达时，input_buffer将 RC 得到的 out_port 写入 metadata FIFO；之后 BODY/TAIL 不再弹 metadata、始终输出 meta_head.out_port。
+
+1. 仅 HEAD/HEADTAIL 建立 metadata：
+   assign meta_push_cmd = accept_write & is_head_flit;
+
+2. HEAD 到达时，将 RC 输出的端口写入 metadata FIFO：
+   meta_mem[meta_wr_ptr].out_port <= out_port_i;
+
+3. 下游 VC 分配成功时，写入同一队首 metadata：
+   meta_mem[meta_rd_ptr].downstream_vc <= vc_new_i;
+   meta_mem[meta_rd_ptr].vc_allocated <= 1'b1;
+
+4. 任意队首 flit（HEAD、BODY 或 TAIL）发送时，端口和 VC 均从队首 metadata 取出，而不是从当前 flit 重新进行 RC：
+   out_port_o = has_packet ? meta_head.out_port : LOCAL;
+   downstream_vc_o = head_allocated ? meta_head.downstream_vc : {VC_SIZE{1'b0}};
+
+5. 仅当 TAIL/HEADTAIL 被成功读出时，才弹出这条 metadata：
+   assign meta_pop_cmd = accept_read & is_tail_flit;
+
+结论
+circular FIFO 保存HEAD/BODY/TAIL等具体的filt数据；metadata FIFO 保存每个 packet 的路由端口和下游 VC。HEAD 写入，BODY/TAIL 复用队首 metadata，TAIL 发出后删除该 metadata。
+rc_unit 中 BODY/TAIL 时的 out_port_o 不应作为有效路由依据。当前 input buffer 只在 HEAD/HEADTAIL 时采样并保存 RC 结果。曾经的rc_unit版本，Body、Tail类型的flit也做判断时，仿真结果不变，因为没有实际使用过body、tail的output。
+所以，Body、Tail的output从始至终都没有被使用过，不管是之前的版本中与Head相同的Output，还是现在的版本里直接不做判断没有赋值，它并不关键，使用Head的Output足以解决问题并满足设计需要。
+
+补充
+从存储对象看，circular FIFO 存放的是 flit，metadata FIFO 存放的是 packet 的控制信息，二者不是重复存储。
+一个 packet 的多个 flit 连续存入 circular FIFO，而该 packet 只对应 metadata FIFO 中的一项。然后下一个packet的flit可继续存入circular FIFO。
+metadata FIFO 的作用是记录每个已进入 circular FIFO 的 packet 的路由端口、下游 VC 和分配状态，使同一个circular FIFO 能按顺序容纳多个 packet，并让队首 packet 在 HEAD 到 TAIL 期间持续使用自己的控制信息。
+因而，可以把 metadata FIFO 理解为支持“多个 packet 共用一个 flit circular FIFO”的包控制队列。同时，metadata FIFO 也作为一个 FIFO，存储的是 Packet。两者只是代码理解角度的不同，描述都是正确的。

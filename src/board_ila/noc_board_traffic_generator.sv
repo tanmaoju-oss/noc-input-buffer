@@ -7,14 +7,17 @@ module noc_board_traffic_generator #(
     parameter SOURCE_QUEUE_DEPTH = 64,
     parameter PACKET_FLIT_NUM = 4,
     parameter LFSR_WIDTH = 16,
+    parameter INJECTION_LFSR_STEPS = 16,
     parameter INJECTION_THRESHOLD = 16'd6554
 ) (
     input  logic clk,
     input  logic rst,
+    input  logic generate_enable_i,//Modify accept the board-top warm-up/measurement generation gate, Michael Tan, 20260827
     input  logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0][VC_NUM-1:0] local_on_off_i,
     output flit_t [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_data_o,
     output logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] local_valid_o,
     output logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_enqueued_o,
+    output logic [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0] packet_queue_full_o,//Modify expose offered packets rejected by a full source queue, Michael Tan, 20260827
     output logic [HEAD_PAYLOAD_SIZE-1:0] enqueued_packet_id_o [MESH_SIZE_X-1:0][MESH_SIZE_Y-1:0]
 );
 
@@ -40,6 +43,22 @@ module noc_board_traffic_generator #(
 
     function automatic logic [LFSR_WIDTH-1:0] next_lfsr(input logic [LFSR_WIDTH-1:0] value);
         next_lfsr = {value[LFSR_WIDTH-2:0], value[LFSR_WIDTH-1] ^ value[LFSR_WIDTH-3] ^ value[LFSR_WIDTH-4] ^ value[LFSR_WIDTH-6]};//Modify use a maximal-length 16-bit LFSR step for synthesizable traffic randomness, Michael Tan, 20260805
+    endfunction
+
+    function automatic logic [LFSR_WIDTH-1:0] advance_injection_lfsr(input logic [LFSR_WIDTH-1:0] value);
+        logic [LFSR_WIDTH-1:0] advanced_value;
+
+        advanced_value = value;
+        for (int step = 0; step < INJECTION_LFSR_STEPS; step++) begin
+            advanced_value = next_lfsr(advanced_value);
+        end
+        advance_injection_lfsr = advanced_value;//Modify decimate consecutive LFSR states before injection sampling to avoid deterministic burst runs, Michael Tan, 20260827
+    endfunction
+
+    function automatic logic [LFSR_WIDTH-1:0] initial_lfsr_seed(input integer x, input integer y);
+        initial_lfsr_seed = 16'h9e37 * (1 + x * MESH_SIZE_Y + y);//Modify disperse deterministic nonzero source seeds around the LFSR period instead of using adjacent states, Michael Tan, 20260827
+        if (initial_lfsr_seed == '0)
+            initial_lfsr_seed = 'h1;//Modify retain the nonzero LFSR-state invariant for every source, Michael Tan, 20260827
     endfunction
 
     function automatic logic [QUEUE_PTR_WIDTH-1:0] next_queue_ptr(input logic [QUEUE_PTR_WIDTH-1:0] value);
@@ -81,6 +100,7 @@ module noc_board_traffic_generator #(
         logic [LFSR_WIDTH-1:0] advanced_lfsr;
         logic [DEST_ADDR_SIZE_X-1:0] generated_dst_x;
         logic [DEST_ADDR_SIZE_Y-1:0] generated_dst_y;
+        logic [SOURCE_ID_WIDTH-1:0] generated_destination_node;
         logic enqueue_packet;
         logic start_queued_packet;
 
@@ -88,9 +108,10 @@ module noc_board_traffic_generator #(
             local_valid_o <= '0;
             local_data_o <= '0;
             packet_enqueued_o <= '0;
+            packet_queue_full_o <= '0;
             for (int x = 0; x < MESH_SIZE_X; x++) begin
                 for (int y = 0; y < MESH_SIZE_Y; y++) begin
-                    traffic_lfsr[x][y] <= (16'h1 + x * MESH_SIZE_Y + y);//Modify give every source a nonzero deterministic LFSR seed, Michael Tan, 20260805
+                    traffic_lfsr[x][y] <= initial_lfsr_seed(x, y);//Modify initialize each source at a dispersed deterministic nonzero LFSR state, Michael Tan, 20260827
                     next_packet_sequence[x][y] <= '0;//Modify reset the per-source packet sequence while source bits remain fixed in the packet ID, Michael Tan, 20260817
                     queue_head[x][y] <= '0;
                     queue_tail[x][y] <= '0;
@@ -105,23 +126,26 @@ module noc_board_traffic_generator #(
         end else begin
             local_valid_o <= '0;
             packet_enqueued_o <= '0;//Modify emit one-cycle enqueue event pulses for the board latency monitor, Michael Tan, 20260817
+            packet_queue_full_o <= '0;//Modify emit one-cycle source-queue-full events for measurement-window loss accounting, Michael Tan, 20260827
             for (int x = 0; x < MESH_SIZE_X; x++) begin
                 for (int y = 0; y < MESH_SIZE_Y; y++) begin
-                    advanced_lfsr = next_lfsr(traffic_lfsr[x][y]);
-                    traffic_lfsr[x][y] <= advanced_lfsr;
+                    advanced_lfsr = advance_injection_lfsr(traffic_lfsr[x][y]);
+                    if (generate_enable_i)
+                        traffic_lfsr[x][y] <= advanced_lfsr;//Modify advance random injection state only while the warm-up or measurement window generates packets, Michael Tan, 20260827
 
-                    //Modify map LFSR bits into a non-self uniform random destination, Michael Tan, 20260805
-                    generated_dst_x = advanced_lfsr[2:0] % MESH_SIZE_X;
-                    generated_dst_y = advanced_lfsr[5:3] % MESH_SIZE_Y;
-                    if (generated_dst_x == x && generated_dst_y == y) begin
-                        if (generated_dst_x == MESH_SIZE_X-1)
-                            generated_dst_x = '0;
-                        else
-                            generated_dst_x = generated_dst_x + 1'b1;
-                    end
+                    //generated_dst_x = advanced_lfsr[2:0] % MESH_SIZE_X;//Original biased 3-bit modulo coordinate mapping, Michael Tan, 20260827
+                    //generated_dst_y = advanced_lfsr[5:3] % MESH_SIZE_Y;//Original biased 3-bit modulo coordinate mapping, Michael Tan, 20260827
+                    //Modify select a non-self destination from the complete node-index range, avoiding 3-bit modulo and self-correction spatial bias, Michael Tan, 20260827
+                    generated_destination_node = advanced_lfsr % (SOURCE_COUNT - 1);
+                    if (generated_destination_node >= source_node_id(x, y))
+                        generated_destination_node = generated_destination_node + 1'b1;
+                    generated_dst_x = generated_destination_node / MESH_SIZE_Y;
+                    generated_dst_y = generated_destination_node % MESH_SIZE_Y;
 
                     //Modify enqueue one offered packet per source at the 0.1 LFSR probability when space is available, Michael Tan, 20260805
-                    enqueue_packet = (advanced_lfsr < INJECTION_THRESHOLD) && (queue_count[x][y] < SOURCE_QUEUE_DEPTH);
+                    enqueue_packet = generate_enable_i && (advanced_lfsr < INJECTION_THRESHOLD) && (queue_count[x][y] < SOURCE_QUEUE_DEPTH);//Modify stop new packet creation during the drain window while retaining queued-packet transmission, Michael Tan, 20260827
+                    if (generate_enable_i && (advanced_lfsr < INJECTION_THRESHOLD) && (queue_count[x][y] >= SOURCE_QUEUE_DEPTH))
+                        packet_queue_full_o[x][y] <= 1'b1;//Modify expose offered packets rejected because the bounded board source queue is full, Michael Tan, 20260827
                     start_queued_packet = !packet_active[x][y] && (queue_count[x][y] != 0) && local_on_off_i[x][y][0];
                     if (enqueue_packet) begin
                         queue_dst_x[x][y][queue_tail[x][y]] <= generated_dst_x;
