@@ -35,6 +35,7 @@ if (-not $NoClean) {
     }
     Remove-Item -LiteralPath (Join-Path $OutputDir "ip") -Recurse -Force -ErrorAction SilentlyContinue # Modify clean only generated ILA IP artifacts, Michael Tan, 20260908
     Remove-Item -LiteralPath (Join-Path $OutputDir "ip_project") -Recurse -Force -ErrorAction SilentlyContinue # Modify clean only generated temporary ILA project, Michael Tan, 20260908
+    Remove-Item -LiteralPath (Join-Path $OutputDir "synthesis_project") -Recurse -Force -ErrorAction SilentlyContinue # Modify clean the generated project-run workspace before its next OOC IP and top synthesis, Michael Tan, 20260909
 }
 
 $compileOrder = @(
@@ -55,6 +56,11 @@ $tclLines = @(
     "# Modify VU440 board ILA synthesis with real ila_0 IP, Michael Tan, 20260908",
     "set argv [list {$normalizedOutput} {$Part}]",
     "source {$normalizedIlaIpTcl}",
+    "close_project", # Modify leave the temporary IP-generation project before opening the project-run top synthesis workspace, Michael Tan, 20260909
+    "create_project -force noc_board_ila_synthesis_project {$normalizedOutput/synthesis_project} -part $Part", # Modify create a writable project-run workspace that manages ILA OOC synthesis, Michael Tan, 20260909
+    "set_property target_language Verilog [current_project]",
+    "read_ip [list {$normalizedOutput/ip/ila_0/ila_0.xci}]", # Modify add the generated ILA XCI to the synthesis fileset before elaborating its wrapper, Michael Tan, 20260909
+    "generate_target all [get_ips ila_0]", # Modify prepare ILA output products for the project-managed OOC run, Michael Tan, 20260909
     "set_property verilog_define {NOC_BOARD_ILA_VIVADO_IP} [current_fileset]"
 )
 foreach ($name in $compileOrder) {
@@ -63,7 +69,7 @@ foreach ($name in $compileOrder) {
         throw "Expected RTL source is missing: $sourceFile"
     }
     $normalized = $sourceFile.Replace("\", "/")
-    $tclLines += "read_verilog -sv [list {$normalized}]"
+    $tclLines += "add_files -norecurse [list {$normalized}]" # Modify add RTL to the Vivado project so synth_1 can schedule IP OOC dependencies, Michael Tan, 20260909
 }
 foreach ($name in $boardIlaCompileOrder) {
     $sourceFile = Join-Path $BoardIlaSourceDir $name
@@ -71,11 +77,15 @@ foreach ($name in $boardIlaCompileOrder) {
         throw "Expected board ILA RTL source is missing: $sourceFile"
     }
     $normalized = $sourceFile.Replace("\", "/")
-    $tclLines += "read_verilog -sv [list {$normalized}]"
+    $tclLines += "add_files -norecurse [list {$normalized}]" # Modify add board ILA RTL to the Vivado project-run synthesis fileset, Michael Tan, 20260909
 }
 
 $tclLines += @(
-    "synth_design -top $Top -part $Part",
+    "set_property top $Top [current_fileset]",
+    "update_compile_order -fileset sources_1",
+    "launch_runs synth_1 -jobs 4", # Modify let Vivado schedule ila_0_synth_1 and link its OOC checkpoint before top synthesis, Michael Tan, 20260909
+    "wait_on_run synth_1",
+    "open_run synth_1",
     "report_utilization -file {$normalizedOutput/utilization.rpt}",
     "report_timing_summary -delay_type max -max_paths 10 -file {$normalizedOutput/timing_summary.rpt}",
     "report_debug_core -file {$normalizedOutput/debug_core.rpt}",

@@ -289,6 +289,9 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 - 已将 TAIL 请求计数端口收敛为精确的 5 位 `0..25` 范围，且 runner 支持以 `SIM_DIR` 指定独立结果目录。沙箱外复测记录在 `vivado_sim_wsl/tb_noc_board_ila_wrapper_bram_recheck_sim/xsim.log`，结果仍为 `enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`；下一步同步 Windows 工作副本并以目标器件综合确认 BRAM 推断和资源量。
 - 本步将每源时间戳存储显式改为 `xpm_memory_sdpram`，指定 `MEMORY_PRIMITIVE="block"`、公共时钟和 `READ_LATENCY_B=1`；XPM 的 `doutb` 会与已寄存的 TAIL ID/到达周期在下一拍对齐，保持延迟统计语义。完成新的 WSL 精确回归后再更新结果；Windows 综合按用户要求暂停。
 - 已更新 `src/board_ila/noc_board_latency_tracker.sv` 为显式 XPM 简单双口 BRAM，并在 runner 链接 `xpm` 库。Linux Vivado 2025.2 沙箱外回归结果 `vivado_sim_wsl/tb_noc_board_ila_wrapper_xpm_bram_sim/xsim.log` 精确通过：`enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`，`tail_events=951`；Windows 综合按用户要求未重启。
+- 现按用户新指令重新运行 Windows Vivado 2019.2 的 `xcvu440-flga2892-2-e` 仅综合，并读取 `synthesis.log` 与 `utilization.rpt`，确认显式 XPM 时间戳存储是否实际消耗 Block RAM；不进入实现、时序、位流或 JTAG。
+- 本次综合在 RTL 展开后因 `Synth 8-439: module 'ila_0' not found` 失败，尚无资源报告。根因是脚本仅生成 `ila_0.xci`、未读入当前综合 fileset；下一步在生成后显式 `read_ip` 该 XCI，再重跑仅综合并检查 BRAM 项。
+- 直接读取生成的加密 ILA HDL 后出现 `Synth 8-5809`，因此改用 Vivado 原生 `synth_ip` OOC 流程生成并链接 `ila_0.xci` 的 IP checkpoint；无需人工点击，完成后再读取顶层 BRAM 资源报告。
 
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 
@@ -2105,6 +2108,12 @@ python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4f
 <!-- Modify record start of packet-unit throughput curve task, Michael Tan, 20260724 -->
 
 ## 2026-07-24 packet 单位吞吐量曲线完成
+
+## 2026-09-09 Windows ILA OOC 综合与 XPM BRAM 验证完成
+
+已将 `scripts/synthesis/run_noc_board_ila_top_synthesis.ps1` 改为 Vivado 工程化 OOC 流程：自动综合 `ila_0_synth_1` 并将其 checkpoint 链接到顶层，不再手工读取 ILA 加密 HDL。Windows Vivado 2019.2 面向 `xcvu440-flga2892-2-e` 的顶层综合成功完成，耗时 3:56:41，0 error、0 critical warning。
+
+结果位于 `vivado_synthesis_windows/noc_board_ila_top_synthesis/`：`utilization.rpt`、`timing_summary.rpt`、`debug_core.rpt`，Windows 结果目录另保留 `noc_board_ila_top_synth.dcp`。资源报告显示 1,604,652 LUT（63.35%）、326,050 寄存器（6.44%）、90 个 RAMB36E2/Block RAM Tile（3.57%）；XPM 时间戳存储已确认真实映射为 Block RAM。
 
 修改了可复用绘图脚本：
 

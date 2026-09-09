@@ -322,6 +322,9 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 - The tracker request-count port was corrected to its exact five-bit `0..25` range, and the runner now accepts an explicit `SIM_DIR` so previous logs are retained. A fresh outside-sandbox WSL rerun at `vivado_sim_wsl/tb_noc_board_ila_wrapper_bram_recheck_sim/xsim.log` again passed `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`. Next, sync this verified version to the Windows worktree and rerun target synthesis to confirm BRAM inference and resource use.//Modify record BRAM tracker equivalence recheck before Windows synthesis, Michael Tan, 20260909
 - Replace the inferred-memory declaration with an explicit `xpm_memory_sdpram` per source, configured for `MEMORY_PRIMITIVE="block"`, common clock, and `READ_LATENCY_B=1`. Align its `doutb` directly with the registered TAIL request metadata on the following monitor clock so the captured arrival cycle still yields the original latency. Re-run the exact wrapper baseline in a new WSL directory; Windows synthesis remains paused by user direction.//Modify record start of explicit XPM BRAM conversion, Michael Tan, 20260909
 - Updated `src/board_ila/noc_board_latency_tracker.sv` to use the explicit XPM simple dual-port RAM and updated `scripts/simulation/run_tb_noc_board_ila_wrapper.sh` to link `xpm`. Linux Vivado 2025.2 outside-sandbox verification at `vivado_sim_wsl/tb_noc_board_ila_wrapper_xpm_bram_sim/xsim.log` passed exactly: `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`; `tail_events=951`. Windows synthesis was not rerun, per user instruction to stop it.//Modify record completed explicit XPM BRAM conversion and WSL equivalence, Michael Tan, 20260909
+- Run the paused Windows Vivado 2019.2 `noc_board_ila_top` target synthesis again for `xcvu440-flga2892-2-e`, then inspect `synthesis.log` and `utilization.rpt` to verify that the explicit XPM timestamp memories consume Block RAM. Scope remains synthesis only.//Modify record start of explicit XPM BRAM synthesis verification, Michael Tan, 20260909
+- The synthesis run elaborated XPM with `MEMORY_PRIMITIVE=block` but failed before optimization and reports because generated `ila_0.xci` was not read into the synthesis fileset (`Synth 8-439: module 'ila_0' not found`). Repair the Windows runner to explicitly `read_ip` the generated XCI, then rerun only synthesis and inspect BRAM resources.//Modify record start of ila_0 XCI synthesis-fileset repair, Michael Tan, 20260909
+- After resolving the wrapper definition, manual reading of the generated encrypted ILA HDL failed with `Synth 8-5809`; use Vivado's `synth_ip` OOC flow for `ila_0.xci` and let the top synthesis link the resulting IP checkpoint. No manual GUI work is required.//Modify record start of ILA OOC checkpoint linkage repair, Michael Tan, 20260909
 
 ## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
 
@@ -2031,6 +2034,11 @@ python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4f
 //Modify record start of packet-unit throughput curve task, Michael Tan, 20260724
 
 ## Packet-Unit Throughput Curve Completed 2026-07-24
+
+## Completed 2026-09-09: Windows ILA OOC Synthesis and XPM BRAM Verification
+
+- Reworked `scripts/synthesis/run_noc_board_ila_top_synthesis.ps1` to use a Vivado project and automatic `ila_0_synth_1` OOC checkpoint dependency; no encrypted ILA HDL is manually read. Windows Vivado 2019.2 synthesis for `xcvu440-flga2892-2-e` completed with 0 errors and 0 critical warnings after 3:56:41.//Modify record completed ILA OOC synthesis, Michael Tan, 20260909
+- Outputs are under `vivado_synthesis_windows/noc_board_ila_top_synthesis/`: `utilization.rpt`, `timing_summary.rpt`, `debug_core.rpt`, and Windows-only `noc_board_ila_top_synth.dcp` (329.48 MB). The final report uses 1,604,652 CLB LUTs (63.35%), 326,050 registers (6.44%), and 90 RAMB36E2 / 90 Block RAM Tiles (3.57%); the XPM timestamp memories are confirmed as Block RAM.//Modify record final BRAM utilization, Michael Tan, 20260909
 
 Changed file:
 
