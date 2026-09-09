@@ -5,7 +5,8 @@ module noc_board_latency_monitor #(
     parameter MESH_SIZE_X = noc_params::MESH_SIZE_X,
     parameter MESH_SIZE_Y = noc_params::MESH_SIZE_Y,
     parameter PACKET_FLIT_NUM = 4,
-    parameter COUNTER_WIDTH = 32
+    parameter COUNTER_WIDTH = 32,
+    parameter integer TRACK_TABLE_DEPTH = 256//Modify make the board timestamp capacity explicit and synthesis-bounded while retaining collision evidence, Michael Tan, 20260909
 ) (
     input logic clk,
     input logic rst,
@@ -33,17 +34,13 @@ module noc_board_latency_monitor #(
     localparam SOURCE_COUNT = MESH_SIZE_X * MESH_SIZE_Y;
     localparam SOURCE_ID_WIDTH = $clog2(SOURCE_COUNT);
     localparam PACKET_SEQUENCE_WIDTH = HEAD_PAYLOAD_SIZE - SOURCE_ID_WIDTH;
-    localparam TRACK_TABLE_DEPTH = 1 << PACKET_SEQUENCE_WIDTH;//Modify restore the complete packet-sequence tracking capacity without reducing monitor semantics, Michael Tan, 20260908
     localparam TRACK_INDEX_WIDTH = $clog2(TRACK_TABLE_DEPTH);
-    localparam TRACK_BANK_DEPTH = 1 << (PACKET_SEQUENCE_WIDTH - 1);//Modify split the timestamp table by sequence MSB to remain below the Vivado per-variable limit, Michael Tan, 20260908
-    localparam TRACK_BANK_INDEX_WIDTH = $clog2(TRACK_BANK_DEPTH);
     localparam FLIT_INDEX_WIDTH = $clog2(PACKET_FLIT_NUM);
 
     logic [COUNTER_WIDTH-1:0] cycle_counter;
-    logic [SOURCE_COUNT-1:0][TRACK_BANK_DEPTH-1:0][COUNTER_WIDTH-1:0] enqueue_cycle_bank0;//Modify store sequence-MSB-zero timestamps in an 819200-bit synthesis-safe bank, Michael Tan, 20260908
-    logic [SOURCE_COUNT-1:0][TRACK_BANK_DEPTH-1:0][COUNTER_WIDTH-1:0] enqueue_cycle_bank1;//Modify store sequence-MSB-one timestamps in an 819200-bit synthesis-safe bank, Michael Tan, 20260908
-    logic [TRACK_TABLE_DEPTH-1:0] entry_valid [SOURCE_COUNT-1:0];//Modify pack timestamp-valid bits per source without changing sequence indexing, Michael Tan, 20260908
-    logic [TRACK_TABLE_DEPTH-1:0] entry_is_measured [SOURCE_COUNT-1:0];//Modify pack measurement qualifiers per source without changing sequence indexing, Michael Tan, 20260908
+    logic [SOURCE_COUNT-1:0][TRACK_TABLE_DEPTH-1:0][COUNTER_WIDTH-1:0] enqueue_cycle;//Modify use a compact 25-by-256 board timestamp table to bound Windows RTL elaboration cost, Michael Tan, 20260909
+    logic [TRACK_TABLE_DEPTH-1:0] entry_valid [SOURCE_COUNT-1:0];//Modify retain per-source validity and report compact-table collisions through timestamp_overwrites, Michael Tan, 20260909
+    logic [TRACK_TABLE_DEPTH-1:0] entry_is_measured [SOURCE_COUNT-1:0];//Modify retain measurement qualification for every compact timestamp slot, Michael Tan, 20260909
 
     always_ff @(posedge clk) begin : latency_measurement
         integer enqueue_increment;
@@ -56,8 +53,6 @@ module noc_board_latency_monitor #(
         logic [SOURCE_ID_WIDTH-1:0] tail_source_id;
         logic [PACKET_SEQUENCE_WIDTH-1:0] tail_sequence;
         logic [TRACK_INDEX_WIDTH-1:0] tail_tracking_index;
-        logic [TRACK_BANK_INDEX_WIDTH-1:0] tail_bank_index;
-        logic tail_sequence_bank;
         logic [COUNTER_WIDTH-1:0] matched_enqueue_cycle;
 
         if (rst) begin
@@ -99,12 +94,9 @@ module noc_board_latency_monitor #(
                     if (packet_enqueued_i[x][y]) begin
                         if (entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]])
                             overwrite_increment = overwrite_increment + 1;//Modify flag timestamp-table reuse before an older same-ID packet reached TAIL, Michael Tan, 20260817
-                        entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= 1'b1;//Modify index the bounded timestamp table with low packet-sequence bits, Michael Tan, 20260908
+                        entry_valid[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= 1'b1;//Modify index the compact board table with the low eight packet-sequence bits, Michael Tan, 20260909
                         entry_is_measured[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= measurement_enable_i;//Modify retain whether this accepted packet belongs to the measurement window, Michael Tan, 20260827
-                        if (enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1])
-                            enqueue_cycle_bank1[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_BANK_INDEX_WIDTH-1:0]] <= cycle_counter;//Modify select the sequence-MSB-one timestamp bank without changing packet-ID lookup semantics, Michael Tan, 20260908
-                        else
-                            enqueue_cycle_bank0[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_BANK_INDEX_WIDTH-1:0]] <= cycle_counter;//Modify select the sequence-MSB-zero timestamp bank without changing packet-ID lookup semantics, Michael Tan, 20260908
+                        enqueue_cycle[enqueued_packet_id_i[x][y][HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH]][enqueued_packet_id_i[x][y][TRACK_INDEX_WIDTH-1:0]] <= cycle_counter;//Modify store the enqueue timestamp in the compact board table, Michael Tan, 20260909
                         if (measurement_enable_i)
                             enqueue_increment = enqueue_increment + 1;//Modify count only accepted source-queue entries created during the measurement window, Michael Tan, 20260827
                     end
@@ -113,14 +105,9 @@ module noc_board_latency_monitor #(
                         tail_packet_id = local_data_i[x][y].data.bt_pl[FLIT_INDEX_WIDTH +: HEAD_PAYLOAD_SIZE];
                         tail_source_id = tail_packet_id[HEAD_PAYLOAD_SIZE-1 -: SOURCE_ID_WIDTH];
                         tail_sequence = tail_packet_id[PACKET_SEQUENCE_WIDTH-1:0];
-                        tail_tracking_index = tail_sequence[TRACK_INDEX_WIDTH-1:0];//Modify map full packet sequence to bounded timestamp-table index, Michael Tan, 20260908
-                        tail_sequence_bank = tail_sequence[TRACK_INDEX_WIDTH-1];//Modify select the same timestamp bank used when this packet was enqueued, Michael Tan, 20260908
-                        tail_bank_index = tail_sequence[TRACK_BANK_INDEX_WIDTH-1:0];
+                        tail_tracking_index = tail_sequence[TRACK_INDEX_WIDTH-1:0];//Modify map the full packet sequence to the compact board-table index, Michael Tan, 20260909
                         if ((tail_source_id < SOURCE_COUNT) && entry_valid[tail_source_id][tail_tracking_index]) begin
-                            if (tail_sequence_bank)
-                                matched_enqueue_cycle = enqueue_cycle_bank1[tail_source_id][tail_bank_index];//Modify read the sequence-MSB-one timestamp bank for matched TAIL latency calculation, Michael Tan, 20260908
-                            else
-                                matched_enqueue_cycle = enqueue_cycle_bank0[tail_source_id][tail_bank_index];//Modify read the sequence-MSB-zero timestamp bank for matched TAIL latency calculation, Michael Tan, 20260908
+                            matched_enqueue_cycle = enqueue_cycle[tail_source_id][tail_tracking_index];//Modify read the compact-table timestamp for matched TAIL latency calculation, Michael Tan, 20260909
                             entry_valid[tail_source_id][tail_tracking_index] <= 1'b0;
                             entry_is_measured[tail_source_id][tail_tracking_index] <= 1'b0;//Modify clear the qualification bit together with every matched timestamp entry, Michael Tan, 20260827
                             if (entry_is_measured[tail_source_id][tail_tracking_index]) begin

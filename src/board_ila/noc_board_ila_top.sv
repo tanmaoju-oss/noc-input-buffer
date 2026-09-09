@@ -6,6 +6,7 @@ module noc_board_ila_top #(
     parameter integer MEASURE_CYCLES = 1000,
     parameter integer DRAIN_CYCLES = 8000,//Modify make the bounded drain duration configurable for a TB-aligned traffic window, Michael Tan, 20260827
     parameter integer SOURCE_QUEUE_DEPTH = 64,//Modify retain the 64-entry board default while permitting a reference-TB capacity override, Michael Tan, 20260827
+    parameter integer MONITOR_TRACK_TABLE_DEPTH = 256,//Modify use the compact board-default tracker capacity required for practical Windows synthesis, Michael Tan, 20260909
     parameter logic [15:0] INJECTION_THRESHOLD = 16'd6554//Modify retain the approximate 0.1 board default while permitting diagnostic injection-rate overrides, Michael Tan, 20260827
 ) (
     input logic l_pad_clk_p,
@@ -164,7 +165,8 @@ module noc_board_ila_top #(
         .MESH_SIZE_X(MESH_SIZE_X),
         .MESH_SIZE_Y(MESH_SIZE_Y),
         .PACKET_FLIT_NUM(4),
-        .COUNTER_WIDTH(32)
+        .COUNTER_WIDTH(32),
+        .TRACK_TABLE_DEPTH(MONITOR_TRACK_TABLE_DEPTH)//Modify pass the explicit compact tracker capacity to the board monitor, Michael Tan, 20260909
     ) board_latency_monitor (
         .clk(noc_clk),
         .rst(noc_rst),

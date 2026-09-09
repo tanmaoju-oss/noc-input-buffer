@@ -297,8 +297,17 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 - Split only `enqueue_cycle` by packet-sequence MSB into two independent `25×1024×32` timestamp banks (`819200` bits each), retaining the full 25-by-2048 source/sequence lookup space. Keep packet IDs, valid/measurement tracking, statistics, traffic generation, and all external monitor ports unchanged.
 - Verify the exact 0.10 wrapper baseline, the complete 0.11–0.20 sweep, then rerun licensed Windows Vivado 2019.2 synthesis for `xcvu440-flga2892-2-e`. No XDC, implementation, bitstream, or board download is within this task.
 - WSL verification is complete: `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` retained the exact `2525`/`60569`/zero-exception 0.10 baseline, and `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh` retained every prior 0.11–0.20 enqueued/tails count, total latency, average latency, and zero error counter. Source must now be committed, pushed, and synchronized to Windows before target-device synthesis.
+- The dual-bank Windows Vivado 2019.2 run passed the former per-variable-size point, but remained in RTL elaboration for more than 38 minutes at about 13.6 GB memory and produced no reports. The user stopped it. Therefore dual banking removes the `Synth 8-4556` hard error but is not an adequate synthesis-time solution for the complete 25-by-2048 timestamp table; next consider a parameterized smaller board tracker (start at 256) with ILA-visible overwrite evidence.
 
 //Modify record start of monitor timestamp dual-bank synthesis-limit refactor, Michael Tan, 20260908
+
+## Active Task Started 2026-09-09: Board-Default Compact Timestamp Tracker and Windows Synthesis Retry
+
+- Replace the board-default monitor tracker with a parameterized `25×256×32` timestamp table. Packet IDs remain 11-bit per-source sequences, but lookup uses the low eight bits; `timestamp_overwrites` remains ILA-visible and explicitly records a still-live ID-slot collision. This deliberately trades the previous 2048-entry no-collision capacity for a bounded, practical first-board synthesis footprint.
+- First rerun the exact ILA-wrapper WSL baseline, then rerun licensed Windows Vivado 2019.2 `synth_design` for exactly `xcvu440-flga2892-2-e`. The task still excludes XDC, implementation, timing closure, bitstream, and JTAG.
+- Linux Vivado 2025.2 reran `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh`; `vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log` again reports the exact reference `enqueued=2525`, `tails=2525`, `unmatched=0`, `overwrites=0`, `total_latency=60569`, and `probe_mismatches=0`.
+
+//Modify record start of compact board timestamp-tracker synthesis retry, Michael Tan, 20260909
 
 ## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
 

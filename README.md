@@ -265,8 +265,17 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 
 - 为消除 Vivado 2019.2 的单变量上限，仅将 `enqueue_cycle` 按 packet sequence 的最高位拆为两个 `25×1024×32` 位时间戳 bank；每个 bank 为 `819200 bits`。valid/measurement 表、包 ID、统计口径和流量发生器均不改。修改后依次复核 0.10 wrapper、0.11–0.20 扫频，再重跑 Windows 综合。
 - WSL Vivado 2025.2 已通过 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 与 `bash scripts/simulation/run_tb_noc_board_latency_monitor_rate_sweep_011_to_020.sh`：0.10 保持 `2525` 包、`60569` 总 cycles、`23.987` cycles；0.11–0.20 十点的所有包数、总延迟、平均延迟与既有表逐字段完全一致，所有异常计数仍为零。
+- 双 bank 版本的 Windows Vivado 2019.2 综合已越过原有单变量上限，但在 RTL 展开阶段运行超过 38 分钟、约 13.6 GB 内存后仍未完成，且未生成资源报告；按用户指令终止。结论是双 bank 仅消除容量报错，未降低完整 160 万位寄存器表的总体综合成本。
 
 <!-- Modify record start of monitor timestamp dual-bank synthesis-limit refactor, Michael Tan, 20260908 -->
+
+## 2026-09-09 板级紧凑时间戳表与综合重试（进行中）
+
+- 将板级默认监测表改为可参数化 `25×256×32` 项；包 ID 的 11 位源内序号保持不变，监测器以低 8 位索引。若未到达 TAIL 的旧包与新包复用槽位，既有 `timestamp_overwrites` 会保留该风险证据并由 ILA 可见。
+- 先复核 ILA wrapper 的精确 WSL 基线，再以 Windows Vivado 2019.2 对 `xcvu440-flga2892-2-e` 重跑 `synth_design`。本步不含 XDC、实现、时序、位流或 JTAG。
+- Linux Vivado 2025.2 已执行 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh`；`vivado_sim_wsl/tb_noc_board_ila_wrapper_sim/xsim.log` 保持精确基线：`enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`。
+
+<!-- Modify record start of compact board timestamp-tracker synthesis retry, Michael Tan, 20260909 -->
 
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 
