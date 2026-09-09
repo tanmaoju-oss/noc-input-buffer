@@ -286,6 +286,7 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 <!-- Modify record start of per-source BRAM tracker refactor, Michael Tan, 20260909 -->
 
 - 已更新 `src/board_ila/noc_board_latency_monitor.sv` 与 `noc_board_latency_tracker.sv`：同源 TAIL 全部先进入 64 项请求 FIFO，再进行同步 BRAM 查询，未匹配仅在查询完成时计数。WSL Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过：`enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`，与原统计基准一致；`tail_events=951` 为 ILA debug 脉冲采样数。
+- 已将 TAIL 请求计数端口收敛为精确的 5 位 `0..25` 范围，且 runner 支持以 `SIM_DIR` 指定独立结果目录。沙箱外复测记录在 `vivado_sim_wsl/tb_noc_board_ila_wrapper_bram_recheck_sim/xsim.log`，结果仍为 `enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`；下一步同步 Windows 工作副本并以目标器件综合确认 BRAM 推断和资源量。
 
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 

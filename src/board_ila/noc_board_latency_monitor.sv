@@ -43,7 +43,7 @@ module noc_board_latency_monitor #(
     logic [SC-1:0] tail_match;
     logic [SC-1:0] tail_measured;
     logic [SC-1:0] tail_request_overflow;
-    logic [SW:0] tail_request_count [SC-1:0];
+    logic [SW-1:0] tail_request_count [SC-1:0];//Modify match the 0-to-25 same-cycle TAIL request count to the tracker port width, Michael Tan, 20260909
     logic [PW-1:0] tail_request_sequence [SC-1:0][MAX_TAIL_REQUESTS-1:0];
     logic [COUNTER_WIDTH-1:0] tail_enqueue [SC-1:0];
     logic [COUNTER_WIDTH-1:0] tail_cycle [SC-1:0];

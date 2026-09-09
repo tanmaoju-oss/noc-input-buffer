@@ -319,6 +319,7 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 //Modify record start of per-source BRAM tracker refactor, Michael Tan, 20260909
 
 - Updated `src/board_ila/noc_board_latency_monitor.sv` and `noc_board_latency_tracker.sv`: every same-source TAIL enters a 64-entry request FIFO before its synchronous BRAM lookup, and unmatched TAILs are counted only at lookup completion. WSL Vivado 2025.2 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` passed with `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`, exactly restoring the required baseline; `tail_events=951` is the ILA debug-pulse sample count.
+- The tracker request-count port was corrected to its exact five-bit `0..25` range, and the runner now accepts an explicit `SIM_DIR` so previous logs are retained. A fresh outside-sandbox WSL rerun at `vivado_sim_wsl/tb_noc_board_ila_wrapper_bram_recheck_sim/xsim.log` again passed `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`. Next, sync this verified version to the Windows worktree and rerun target synthesis to confirm BRAM inference and resource use.//Modify record BRAM tracker equivalence recheck before Windows synthesis, Michael Tan, 20260909
 
 ## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
 

@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 SOURCE_DIR="${REPO_ROOT}/src"
 TB_DIR="${REPO_ROOT}/testbench"
-SIM_DIR="${REPO_ROOT}/vivado_sim_wsl/tb_noc_board_ila_wrapper_sim"
+SIM_DIR="${SIM_DIR:-${REPO_ROOT}/vivado_sim_wsl/tb_noc_board_ila_wrapper_sim}" # Modify allow an explicitly unique WSL result directory so prior logs are preserved, Michael Tan, 20260909
 VIVADO_ROOT="${VIVADO_ROOT:-/home/tanma/tools/Xilinx/2025.2/Vivado}"
 TOP="tb_noc_board_ila_wrapper"
 
