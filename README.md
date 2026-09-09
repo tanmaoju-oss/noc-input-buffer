@@ -287,6 +287,8 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 
 - 已更新 `src/board_ila/noc_board_latency_monitor.sv` 与 `noc_board_latency_tracker.sv`：同源 TAIL 全部先进入 64 项请求 FIFO，再进行同步 BRAM 查询，未匹配仅在查询完成时计数。WSL Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过：`enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`，与原统计基准一致；`tail_events=951` 为 ILA debug 脉冲采样数。
 - 已将 TAIL 请求计数端口收敛为精确的 5 位 `0..25` 范围，且 runner 支持以 `SIM_DIR` 指定独立结果目录。沙箱外复测记录在 `vivado_sim_wsl/tb_noc_board_ila_wrapper_bram_recheck_sim/xsim.log`，结果仍为 `enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`；下一步同步 Windows 工作副本并以目标器件综合确认 BRAM 推断和资源量。
+- 本步将每源时间戳存储显式改为 `xpm_memory_sdpram`，指定 `MEMORY_PRIMITIVE="block"`、公共时钟和 `READ_LATENCY_B=1`；XPM 的 `doutb` 会与已寄存的 TAIL ID/到达周期在下一拍对齐，保持延迟统计语义。完成新的 WSL 精确回归后再更新结果；Windows 综合按用户要求暂停。
+- 已更新 `src/board_ila/noc_board_latency_tracker.sv` 为显式 XPM 简单双口 BRAM，并在 runner 链接 `xpm` 库。Linux Vivado 2025.2 沙箱外回归结果 `vivado_sim_wsl/tb_noc_board_ila_wrapper_xpm_bram_sim/xsim.log` 精确通过：`enqueued=2525`、`tails=2525`、`unmatched=0`、`overwrites=0`、`total_latency=60569`、`probe_mismatches=0`，`tail_events=951`；Windows 综合按用户要求未重启。
 
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 

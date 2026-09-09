@@ -32,7 +32,7 @@ rm -f -- "${SIM_DIR}/xvlog.log" "${SIM_DIR}/xelab.log" "${SIM_DIR}/xsim.log"
 
 pushd "${SIM_DIR}" >/dev/null
 xvlog --sv --relax --work xil_defaultlib "${SOURCE_FILES[@]}" --log xvlog.log
-xelab --debug typical --relax -L unisims_ver -L xil_defaultlib --snapshot "${TOP}_sim" "xil_defaultlib.${TOP}" --log xelab.log
+xelab --debug typical --relax -L unisims_ver -L xpm -L xil_defaultlib --snapshot "${TOP}_sim" "xil_defaultlib.${TOP}" --log xelab.log # Modify link the explicit XPM BRAM model during WSL simulation, Michael Tan, 20260909
 xsim "${TOP}_sim" --runall --log xsim.log
 popd >/dev/null
 
