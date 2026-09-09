@@ -46,7 +46,7 @@ $compileOrder = @(
     "switch_allocator_Xiugai1.sv", "vc_allocator.sv"
 )
 $boardIlaCompileOrder = @(
-    "noc_board_traffic_generator.sv", "noc_board_latency_monitor.sv", "noc_board_ila_debug.sv", "noc_board_ila_top.sv"
+    "noc_board_traffic_generator.sv", "noc_board_latency_tracker.sv", "noc_board_latency_monitor.sv", "noc_board_ila_debug.sv", "noc_board_ila_top.sv"
 )
 
 $normalizedOutput = $OutputDir.Replace("\", "/")

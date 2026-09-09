@@ -277,6 +277,16 @@ bash scripts/simulation/run_tb_noc_board_latency_monitor.sh
 
 <!-- Modify record start of compact board timestamp-tracker synthesis retry, Michael Tan, 20260909 -->
 
+## 2026-09-09 每源 BRAM 时间戳追踪器重构（进行中）
+
+- 紧凑的三维 `25×256` 时间戳表仍被 Vivado 2019.2 识别为寄存器，综合时间不可接受；已停止该运行。下一步改为 25 个独立的每源 `2048×32` Block RAM 追踪器，恢复完整容量，保留 ID、有效/测量标记及 ILA 可见的覆盖计数。
+- BRAM 查表采用同步读：TAIL 到达周期及 ID 先锁存，下一拍以锁存周期计算延迟。因此最终统计不变，debug TAIL 事件相对实际 TAIL 晚一拍；先完成精确 WSL 回归，再同步 Windows 重试综合。
+- 首次执行 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 已通过编译与 elaboration，但 drain 结束时失败：`enqueued=2525 tails=2433`，比原基准少 92 个 TAIL；当前重构尚未等价，需先检查同一源连续 TAIL 的同步查询处理。
+
+<!-- Modify record start of per-source BRAM tracker refactor, Michael Tan, 20260909 -->
+
+- 已更新 `src/board_ila/noc_board_latency_monitor.sv` 与 `noc_board_latency_tracker.sv`：同源 TAIL 全部先进入 64 项请求 FIFO，再进行同步 BRAM 查询，未匹配仅在查询完成时计数。WSL Vivado 2025.2 执行 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` 通过：`enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`，与原统计基准一致；`tail_events=951` 为 ILA debug 脉冲采样数。
+
 ## 2026-09-08 板级与性能 TB 对比图（进行中）
 
 - 基于 `file/仿真分析/板级监测模块与性能TB_011至020注入率对比.md` 的十个实测点，新增可复用绘图脚本和双曲线 PNG，直观比较两种流量发生模型在 0.11–0.20 区间的平均延迟。

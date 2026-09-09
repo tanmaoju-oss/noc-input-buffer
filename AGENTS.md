@@ -309,6 +309,17 @@ For every future task that changes code, creates/changes a tb, runs a new meanin
 
 //Modify record start of compact board timestamp-tracker synthesis retry, Michael Tan, 20260909
 
+## Active Task Started 2026-09-09: Per-Source BRAM Timestamp Tracker Refactor
+
+- The compact 256-entry three-dimensional timestamp table still caused an impractically long Windows Vivado run. The user stopped the running synthesis. Replace it with 25 independent 2048-entry per-source timestamp trackers using block RAM, while retaining 11-bit sequence IDs, full 25-by-2048 capacity, valid/measurement qualification, and ILA-visible overwrite evidence.
+- A BRAM read is synchronous: capture each TAIL cycle and ID, then update monitoring counters/debug one clock later using the captured TAIL cycle so final packet counts and total/average latency are unchanged. The one-cycle delayed debug event is expected and must be documented and verified.
+- First run the exact wrapper WSL baseline, then commit/push/synchronize Windows and rerun Windows Vivado 2019.2 synthesis for `xcvu440-flga2892-2-e`. No XDC, implementation, bitstream, or JTAG is in scope.
+- The first WSL run, `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh`, compiled and elaborated successfully but failed at drain completion: `enqueued=2525 tails=2433`, 92 fewer TAILs than the prior `2525/60569/0/0` baseline. The refactor is not yet equivalent; inspect handling of consecutive TAIL lookup requests from one source before any Windows synthesis.
+
+//Modify record start of per-source BRAM tracker refactor, Michael Tan, 20260909
+
+- Updated `src/board_ila/noc_board_latency_monitor.sv` and `noc_board_latency_tracker.sv`: every same-source TAIL enters a 64-entry request FIFO before its synchronous BRAM lookup, and unmatched TAILs are counted only at lookup completion. WSL Vivado 2025.2 `bash scripts/simulation/run_tb_noc_board_ila_wrapper.sh` passed with `enqueued=2525 tails=2525 unmatched=0 overwrites=0 total_latency=60569 probe_mismatches=0`, exactly restoring the required baseline; `tail_events=951` is the ILA debug-pulse sample count.
+
 ## Active Task Started 2026-09-08: Board-Monitor and Performance-TB Comparison Plot
 
 - Create a reusable plot under `scripts/simulation/` and a PNG under `file/仿真分析/` from the completed ten-point 0.11–0.20 comparison data.

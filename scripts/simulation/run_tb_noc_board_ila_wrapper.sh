@@ -22,7 +22,7 @@ SOURCE_FILES=(
     "${SOURCE_DIR}/round_robin_arbiter.sv" "${SOURCE_DIR}/router.sv" "${SOURCE_DIR}/router2router.sv"
     "${SOURCE_DIR}/router_link.sv" "${SOURCE_DIR}/separable_input_first_allocator.sv" "${SOURCE_DIR}/switch_allocator2crossbar.sv"
     "${SOURCE_DIR}/switch_allocator_Xiugai1.sv" "${SOURCE_DIR}/vc_allocator.sv"
-    "${SOURCE_DIR}/board_ila/noc_board_traffic_generator.sv" "${SOURCE_DIR}/board_ila/noc_board_latency_monitor.sv"
+    "${SOURCE_DIR}/board_ila/noc_board_traffic_generator.sv" "${SOURCE_DIR}/board_ila/noc_board_latency_tracker.sv" "${SOURCE_DIR}/board_ila/noc_board_latency_monitor.sv"
     "${SOURCE_DIR}/board_ila/noc_board_ila_debug.sv" "${SOURCE_DIR}/board_ila/noc_board_ila_top.sv" "${TB_DIR}/${TOP}.sv"
 )
 
