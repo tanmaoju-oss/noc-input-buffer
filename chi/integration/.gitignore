@@ -1,0 +1,4 @@
+# Modify by Michael Tan，20261015: keep generated CHI integration platform results local.
+/vivado_sim_wsl/
+/vivado_sim_windows/
+/vivado_synthesis_windows/
