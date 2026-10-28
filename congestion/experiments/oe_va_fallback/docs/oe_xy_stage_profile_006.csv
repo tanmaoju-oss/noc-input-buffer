@@ -1,0 +1,3 @@
+algorithm,rate_ppm,mean_total,va_no_vc_alt_free,va_no_vc_no_alt,va_arbitration,sa_on_off,sa_arbitration,va_granted,sa_read,va_no_vc_share_of_va_wait_percent,va_wait_cycles_per_window_grant,sa_wait_cycles_per_window_read,link_mean_utilization,link_max_utilization,link_utilization_cv,vertical_column_min_flits,vertical_column_max_flits
+XY,60000,81.071679,0,397830,53790,0,378893,113983,455880,88.08954430716089,3.9621697972504673,0.8311244187066772,0.5458119658119658,0.8508333333333333,0.3576673113102358,15225,16097
+OE,60000,1774.974179,554189,974411,26541,0,69204,30927,124438,98.29333803172831,50.28425000808355,0.5561323711406484,0.14797275641025642,0.5558333333333333,0.8006914791469533,845,9209
