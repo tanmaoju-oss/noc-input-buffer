@@ -2,6 +2,10 @@
 
 <!-- Modify by Michael Tan，20261028: record passing buffer/network regressions and failing TwoAware cost checks. -->
 
+> 后续更新（2026-10-28）：本文保留修复前结果。用户已授权修复 TwoAware，最新9组路由及全网回归通过，见 [修复验证报告](twoaware_fix_verification_20261028.md)。ThreeAware 按用户说明为未完成预留功能，不纳入当前验收。
+
+<!-- Modify by Michael Tan，20261028: link completed TwoAware fix while retaining historical failure evidence. -->
+
 ## 结论
 
 已验证两处缓冲修改和默认深度 8 的拥塞采集。13×13 全网在 XY、OneAware、TwoAware 三种算法下的三种确定性流量均通过包/逐 flit 自检。但 TwoAware 独立代价比较检查失败：东向 X 距离为 1 时缺少两跳代价赋值，不能宣称拥塞选优正确。ThreeAware 仅检查最短跳合法性，尚无死锁规避保证。原始 TB 不作本轮证据。

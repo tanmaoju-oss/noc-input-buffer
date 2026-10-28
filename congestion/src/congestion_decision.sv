@@ -269,6 +269,23 @@ module congestion_decision #(
                                                 get_decision_metric(X_CURRENT, Y_CURRENT - 1, SOUTH),
                                                 get_decision_metric(X_CURRENT + 1, Y_CURRENT - 1, WEST));
                                         end
+                                        //Modify add missing eastbound g/h costs when X has one hop left, Michael Tan, 20261028
+                                        if ((X_CURRENT + 1 == x_dest_i) && (y_dest_i + 1 < Y_CURRENT)) begin
+                                            x_flits = agg2(
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT, WEST),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT - 1, SOUTH));
+                                            y_flits = agg2(
+                                                get_decision_metric(X_CURRENT, Y_CURRENT - 1, SOUTH),
+                                                get_decision_metric(X_CURRENT, Y_CURRENT - 2, SOUTH));
+                                        end
+                                        if ((X_CURRENT + 1 == x_dest_i) && (y_dest_i + 1 == Y_CURRENT)) begin
+                                            x_flits = agg2(
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT, WEST),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT - 1, SOUTH));
+                                            y_flits = agg2(
+                                                get_decision_metric(X_CURRENT, Y_CURRENT - 1, SOUTH),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT - 1, WEST));
+                                        end
                                     end else begin
                                         // 目的地在此节点南侧（nanbei=2）
                                         nanbei = 2'b10;
@@ -286,6 +303,23 @@ module congestion_decision #(
                                             x_flits = agg2(
                                                 get_decision_metric(X_CURRENT + 1, Y_CURRENT, WEST),
                                                 get_decision_metric(X_CURRENT + 2, Y_CURRENT, WEST));
+                                            y_flits = agg2(
+                                                get_decision_metric(X_CURRENT, Y_CURRENT + 1, NORTH),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT + 1, WEST));
+                                        end
+                                        //Modify add missing eastbound g/h costs when X has one hop left, Michael Tan, 20261028
+                                        if ((X_CURRENT + 1 == x_dest_i) && (Y_CURRENT + 1 < y_dest_i)) begin
+                                            x_flits = agg2(
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT, WEST),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT + 1, NORTH));
+                                            y_flits = agg2(
+                                                get_decision_metric(X_CURRENT, Y_CURRENT + 1, NORTH),
+                                                get_decision_metric(X_CURRENT, Y_CURRENT + 2, NORTH));
+                                        end
+                                        if ((X_CURRENT + 1 == x_dest_i) && (Y_CURRENT + 1 == y_dest_i)) begin
+                                            x_flits = agg2(
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT, WEST),
+                                                get_decision_metric(X_CURRENT + 1, Y_CURRENT + 1, NORTH));
                                             y_flits = agg2(
                                                 get_decision_metric(X_CURRENT, Y_CURRENT + 1, NORTH),
                                                 get_decision_metric(X_CURRENT + 1, Y_CURRENT + 1, WEST));
