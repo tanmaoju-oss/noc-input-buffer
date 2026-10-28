@@ -1,0 +1,4 @@
+# Modify keep generated congestion platform runs local, Michael Tan, 20261028
+vivado_sim_wsl/*_sim/
+vivado_sim_windows/*_sim/
+vivado_synthesis_windows/*_synthesis/
