@@ -306,3 +306,9 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 阶段代码806fc4f至d3f6638及结果2605bee已推送origin/chore/reorganize-project-layout。Windows fetch更新远程引用到2605bee，pull --ff-only因既有AGENTS/README/板级代码修改及未跟踪congestion文件保护性中止，工作HEAD仍cdcc7a9；未覆盖、清理或stash。后续实验应针对0.08吞吐差距和部分P99，先建立锁定SA方向的独立观测，再决定方案，不把本轮中档平均接近宣称为全负载胜出。
 
 <!-- Modify by Michael Tan，20261029: record pushed experimental checkpoints and protected Windows synchronization failure. -->
+
+### 2026-10-29：Word 设计与测试报告
+
+新增 [拥塞感知 NoC 设计与测试报告 V1.0](docs/拥塞感知NoC设计与测试报告_V1.0_20261029.docx)，以设计方案、分层自检、延迟统计及公平对照为主，结果只作一页摘要。明确本次主要测试 AGGREGATION=0（平均），1=最大、2=加权未作完整横向验收；实验固定三跳等权评分与该配置分别说明。文档共7页，已通过OOXML结构检查及LibreOffice渲染/分页和表格预览；未改RTL或新增仿真。
+
+<!-- Modify by Michael Tan，20261029: add a Word report focused on design and test methods with the average-aggregation scope explicit. -->
