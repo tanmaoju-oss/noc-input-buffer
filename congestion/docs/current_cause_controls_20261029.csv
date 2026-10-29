@@ -1,0 +1,10 @@
+variant,algorithm,rate_ppm,seed,warmup,measure,offered_packets,cohort_packets,completed_packets,actual_offered_ppc,trace_hash,mean_total,mean_queue,mean_network,p95_total,p99_total,finish_cycle,source_backlog_stop,run_directory
+XY,0,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,58.628085,0.759387,57.868698,135,189,1639,6,congestion/vivado_sim_wsl/tb_congestion_current_profile_sim/run_JYum8Qm7
+OE,2,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,1092.088784,771.594526,320.494258,2446,2729,4010,6543,congestion/vivado_sim_wsl/tb_congestion_current_profile_sim/run_QreNViz9
+VC_OFF,2,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,1092.088784,771.594526,320.494258,2446,2729,4010,6543,congestion/experiments/oe_current_diagnosis/vivado_sim_wsl/tb_oe_current_vc_choice_sim/run_mode0_qUB7kK4o
+VC_READY,2,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,947.116885,648.991692,298.125193,2357,2993,4306,5551,congestion/experiments/oe_current_diagnosis/vivado_sim_wsl/tb_oe_current_vc_choice_sim/run_mode1_5LUPlXhW
+FLOW_OFF,2,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,1092.088784,771.594526,320.494258,2446,2729,4010,6543,congestion/experiments/oe_current_flow/vivado_sim_wsl/tb_oe_current_flow_sim/run_mode0_O09chAa4
+FLOW_READY_OE,2,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,688.437403,375.371345,313.066058,1842,2210,3534,4259,congestion/experiments/oe_current_flow/vivado_sim_wsl/tb_oe_current_flow_sim/run_mode1_qcFOyZR3
+FLOW_READY_XY,0,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,55.736418,0.473161,55.263256,123,165,1639,1,congestion/experiments/oe_current_flow/vivado_sim_wsl/tb_oe_current_flow_sim/run_mode1_jZBwwLfe
+ONE_AWARE,3,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,184.586870,21.795308,162.791561,568,767,2039,548,congestion/vivado_sim_wsl/tb_congestion_oe_policy_compare_sim/run_hSgyd1xo
+TWO_AWARE,4,60000,1234501,300,1200,15260,12277,15260,0.060537,d84c82f8,136.862181,13.108088,123.754093,413,601,1921,410,congestion/vivado_sim_wsl/tb_congestion_oe_policy_compare_sim/run_h22Tko79

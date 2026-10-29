@@ -258,3 +258,15 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 实现提交3581978（Release congestion VC ingress ownership at accepted packet tail）已推送origin/chore/reorganize-project-layout，修改前检查点c0bcd8f。Windows工作副本fetch成功，pull --ff-only因已有AGENTS/README、板级RTL/脚本修改及未跟踪congestion文件而中止，HEAD仍为cdcc7a9；未覆盖、清理或stash。Linux根src无本次修改，验证日志和参数保留在congestion/vivado_sim_wsl。
 
 <!-- Modify by Michael Tan，20261029: record pushed admission fix and preserve pre-existing Windows work. -->
+
+## 2026-10-29：修改后 OE/XY 巨大差距归因启动
+
+以已交付eccd9af/3581978为当前基线，正式congestion/src和根src保持不变。新增独立tb_congestion_current_profile，复用0.06完整计分板/流量，逐项复现XY58.628085/OE1092.088784后，观察VA/SA等待、已预约但on_off关闭的VC选择、同出口可发送替代VC、合法替代方向及两级仲裁造成的空转。必要时在独立实验副本进行单因素干预，以实测反事实检验主因，不将旧版等待比例移植到新协议。代码均含Modify标注并Git管理。
+
+<!-- Modify by Michael Tan，20261029: start current-protocol root-cause profiling and controlled interventions. -->
+
+## 2026-10-29：修改后 OE/XY 悬殊差距主要原因定位
+
+正式congestion/src和根src本轮不改。新只读观测逐项复现XY58.628085/OE1092.088784全部22字段；OE当前主要等待转为SA on_off854850请求周期（XY83101），不能沿用旧VA98.3%结论。精确重放实际生成流量/ID/目的，15260包、12277样本、d84c82f8一致：当前固定OE选路49条链路需求超1 flit/生成周期，峰值1.343333，XY零条、峰值0.893333。隔离VC可接收优先仅降OE至947.116885且P99恶化；只改重开滞回降至688.437403，XY58.628→55.736。正式RTL仅切既有同OE候选OneAware/TwoAware，均值184.586870/136.862181，各147697次实际授权合法候选检查PASS，说明巨大差距主要来自当前固定出口选择造成局部超载，流控滞回/回压放大，不能归于OE规则必然如此。9次最终运行的完整包、排空、SHA、共同task及OFF对照核验通过；各干预不能相加、不合入正式RTL。命令和全部run见 [归因报告](docs/current_oe_root_cause_20261029.md)。新增观测/实验/分析代码含Modify，Git交付随后记录，未综合。
+
+<!-- Modify by Michael Tan，20261029: record current-protocol root-cause evidence and controlled counterfactuals without changing official RTL. -->
