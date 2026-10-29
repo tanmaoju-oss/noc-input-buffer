@@ -312,3 +312,9 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 新增 [拥塞感知 NoC 设计与测试报告 V1.0](docs/拥塞感知NoC设计与测试报告_V1.0_20261029.docx)，以设计方案、分层自检、延迟统计及公平对照为主，结果只作一页摘要。明确本次主要测试 AGGREGATION=0（平均），1=最大、2=加权未作完整横向验收；实验固定三跳等权评分与该配置分别说明。文档共7页，已通过OOXML结构检查及LibreOffice渲染/分页和表格预览；未改RTL或新增仿真。
 
 <!-- Modify by Michael Tan，20261029: add a Word report focused on design and test methods with the average-aggregation scope explicit. -->
+
+### 2026-10-29：Word 报告精简版 V1.1
+
+完成 [设计与测试报告 V1.1](docs/拥塞感知NoC设计与测试报告_V1.1_20261029.docx)，按“设计方案与实现、测试方案与实施、完成情况与测试结果”三个章节组织，共3页。突出完成内容，明确主要测试AGGREGATION=0（平均），保留五组实测数据。已完成OOXML、分页和表格预览检查，Windows同名docs目录同步备份并核对SHA256。V1.0保留作历史版本。
+
+<!-- Modify by Michael Tan，20261029: simplify the Word report to three achievement-focused chapters and synchronize the Windows backup. -->
