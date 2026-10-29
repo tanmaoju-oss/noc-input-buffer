@@ -84,3 +84,9 @@ bash congestion/scripts/simulation/run_tb_congestion_admission_latency.sh -gener
 新日志：`tb_congestion_admission_latency_sim/run_E0qbFekc`（XY）、`run_EheVCm52`（OE）；旧参考分别为`tb_congestion_latency_compare_sim/run_9BfBkWtn`及`tb_congestion_oe_latency_compare_sim/run_vnnZ0OLT`。前后汇总CSV：`packet_admission_latency_006_20261029.csv`。
 
 这是单种子、均匀流量、单档有限窗口的结果，不是所有负载收益或稳态饱和点证明；OE仍显著慢于XY，不能把剩余问题宣称解决。全部12个新运行的22个RTL哈希与本次最终源码一致，报告中的最终PASS不使用编译失败/几何设置失败的run。
+
+### 多包接入 Git 交付与 Windows 状态（2026-10-29）
+
+实现提交3581978（Release congestion VC ingress ownership at accepted packet tail）已推送origin/chore/reorganize-project-layout，修改前检查点c0bcd8f。Windows工作副本fetch成功，pull --ff-only因已有AGENTS/README、板级RTL/脚本修改及未跟踪congestion文件而中止，HEAD仍为cdcc7a9；未覆盖、清理或stash。Linux根src无本次修改，验证日志和参数保留在congestion/vivado_sim_wsl。
+
+<!-- Modify by Michael Tan，20261029: record pushed admission fix and preserve pre-existing Windows work. -->

@@ -252,3 +252,9 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 仅congestion/src/input_buffer_src_circular_full.sv改变设计：TAIL/HEADTAIL成功写入才归还上游接入资格，TAIL读出只弹元数据；保留拒收与包顺序保护、7关闭/1重开滞回，增加元数据满接收保护，未恢复~is_full_o分配。新双路由器XY/OE测试证明第一包未读出时第二包经真实VA进入同一VC，停读占用7/两条元数据，前包开放时竞争包不得重用其VC。100步边界及原64组容量/拒写通过；XY/OE/OneAware/TwoAware全网12阶段12168包/56784flit、54756项采集及默认路由自检均PASS。高负载同轨迹0.06下两组15260包全送达，网络FIFO最大7；XY总延迟81.072→58.628、OE1774.974→1092.089，剩余OE差距未解决。所有代码改动含Modify/Original，修改前Git检查点c0bcd8f；正式提交/推送随后记录。命令、源码SHA、全部run和限制见 [修改报告](docs/packet_admission_fix_20261029.md)。根src和历史隔离实验RTL不变，未综合。
 
 <!-- Modify by Michael Tan，20261029: record packet-boundary reuse implementation and passing safety, network and high-load regressions. -->
+
+### 多包接入 Git 交付与 Windows 状态（2026-10-29）
+
+实现提交3581978（Release congestion VC ingress ownership at accepted packet tail）已推送origin/chore/reorganize-project-layout，修改前检查点c0bcd8f。Windows工作副本fetch成功，pull --ff-only因已有AGENTS/README、板级RTL/脚本修改及未跟踪congestion文件而中止，HEAD仍为cdcc7a9；未覆盖、清理或stash。Linux根src无本次修改，验证日志和参数保留在congestion/vivado_sim_wsl。
+
+<!-- Modify by Michael Tan，20261029: record pushed admission fix and preserve pre-existing Windows work. -->
