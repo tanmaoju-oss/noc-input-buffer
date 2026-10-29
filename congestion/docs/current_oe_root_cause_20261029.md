@@ -109,3 +109,9 @@ OneAware最终run_hSgyd1xo、TwoAware最终run_h22Tko79均通过147697次实际V
 当前工作已找到这档负载下巨大差距的主要性能来源，不意味着现有OE的禁转公式写错，也不意味着硬件实现某个单独布尔表达式是唯一根因。下一步若要正式修复，应明确OE的选择策略与软件参照配置，单独设计候选方向/资源选择的受控改造；不直接合入本轮实验的流控或VC策略，不按期望曲线反复调参。
 
 Git空白检查：新TB/脚本/报告通过；隔离RTL副本保留正式源既有行尾空白和CRLF，新增的三个源码差异以no-index对比检查没有新增空白问题，未为了格式清理修改基线或使运行SHA失效。
+
+### 当前 OE 归因交付（2026-10-29）
+
+提交c165636（Identify current OE latency causes with matched controls and route-demand replay）已推送origin/chore/reorganize-project-layout，仅新增观测/隔离实验/分析与文档，正式congestion/src及根src不变。Windows fetch成功，pull --ff-only仍因已有修改及未跟踪congestion文件保护性中止，HEAD保持cdcc7a9；未覆盖、清理或stash。九组最终验证数据、完整run路径及因果边界见归因报告。
+
+<!-- Modify by Michael Tan，20261029: record pushed current-protocol causal evidence and protected Windows synchronization. -->
