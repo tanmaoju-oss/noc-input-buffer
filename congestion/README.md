@@ -300,3 +300,9 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 隔离候选/VA联合匹配/合法三跳/SA联合匹配检查点806fc4f、791cd3e、4a01ca3、564b61e、c837d51；2421b17记录严格最大匹配饥饿反例，d3f6638加入固定20合格等待机会的VA/SA龄期保护。保护版五点XY/OE平均：0.06原种子48.420217/48.075426、种子42为46.136860/46.830773、0.04原种子29.166975/28.907373、0.06种子7为47.688213/46.031417、0.08原种子212.116171/492.447056。前四点接近，压力点及部分P99未达目标。VA577图、SA593图、同一饥饿断言和XY/OE各3042包/14196flit长包背压回归通过；保留AGE0饥饿失败。统一脚本核验49组性能记录/20公平配对、源SHA、流量task和OFF精确对照。正式congestion/src及根src不变，未综合。SA等待分类存在VA组合方向不等于锁定SA方向的观测限制，不用其归因；延迟/包完整性/实际授权断言不受影响。完整表、命令、run路径与边界见congestion/docs/oe_xy_ready_selection_trials_20261029.md，最终入口congestion/experiments/oe_ready_aged/scripts/simulation/run_campaign.sh 5 1 1 1 -generic_top ALGORITHM=0/2。
 
 <!-- Modify by Michael Tan，20261029: record reproducible matched-latency progress, starvation protection, adverse pressure result and diagnostic limits. -->
+
+### OE 同延迟试验交付（2026-10-29）
+
+阶段代码806fc4f至d3f6638及结果2605bee已推送origin/chore/reorganize-project-layout。Windows fetch更新远程引用到2605bee，pull --ff-only因既有AGENTS/README/板级代码修改及未跟踪congestion文件保护性中止，工作HEAD仍cdcc7a9；未覆盖、清理或stash。后续实验应针对0.08吞吐差距和部分P99，先建立锁定SA方向的独立观测，再决定方案，不把本轮中档平均接近宣称为全负载胜出。
+
+<!-- Modify by Michael Tan，20261029: record pushed experimental checkpoints and protected Windows synchronization failure. -->
