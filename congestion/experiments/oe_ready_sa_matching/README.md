@@ -17,3 +17,11 @@ POLICY5/FLOW1/SA1：原种子0.06 OE49.083245/XY48.835465；seed42 0.06 OE47.121
 593图独立最大匹配参考、实际VA/SA授权合法/唯一/交叉开关映射及完整包检查通过。XY/OE各自原三阶段回归通过，每算法3042包/14196flit，覆盖长于FIFO的12-flit包、HEADTAIL、源/接收背压和完全排空。追加seed7及0.08压力点仍按预声明运行，全部保留。
 
 <!-- Modify by Michael Tan，20261029: checkpoint matched average latency and residual P99 gap with safety regressions. -->
+
+## 持续竞争反例：严格最大匹配不应直接采用
+
+新增tb_oe_sa_fairness保持LOCAL/VC0→EAST、LOCAL/VC1→SOUTH、NORTH/VC0→EAST均可发送。严格最大基数只能一直选LOCAL/VC1和NORTH/VC0；实际目标VC连续41周期零服务，其他82次传输，非饥饿断言FAIL，日志保留。它是仲裁公平性反例，不把有限窗口无丢包当作长期公平性证明。该版本只作历史实验，不合入正式RTL；另建等待龄期保护副本并使用同一断言验收。
+
+追加0.08压力点也未达目标：OE567.859左右、XY207.318左右；必须报告，不以中档结果代表饱和区间。seed7/0.06下OE47.188左右、XY47.849左右，仍仅是有限测试点。
+
+<!-- Modify by Michael Tan，20261029: preserve starvation failure and high-pressure regression instead of promoting an unsafe mean-only optimization. -->
