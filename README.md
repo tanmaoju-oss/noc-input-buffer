@@ -2172,3 +2172,27 @@ python3 scripts/simulation/plot_tb_mesh_throughput_sweep_5x5_noxim_queue_knee_4f
 提交c165636（Identify current OE latency causes with matched controls and route-demand replay）已推送origin/chore/reorganize-project-layout，仅新增观测/隔离实验/分析与文档，正式congestion/src及根src不变。Windows fetch成功，pull --ff-only仍因已有修改及未跟踪congestion文件保护性中止，HEAD保持cdcc7a9；未覆盖、清理或stash。九组最终验证数据、完整run路径及因果边界见归因报告。
 
 <!-- Modify by Michael Tan，20261029: record pushed current-protocol causal evidence and protected Windows synchronization. -->
+
+## 2026-10-29：OE 联合候选/接收资格选择试验启动
+
+用户授权继续试验，目标同条件接近或优于XY，不放宽OE合法性、包正确性或统计口径。仅在congestion/experiments/oe_ready_candidates建立当前协议副本，复用已验证候选元数据接口，关闭策略须精确复现当前XY/OE。预先固定三模式：0原选择；1在合法候选的可预约且on_off开启VC中轮询；2在相同可发送集合中优先较低邻居输入存量并轮询同分。不在获配/HEAD发送后改路，不按~is_full_o归还；原滞回与快速重开作为独立开关。正式congestion/src、根src及既有实验不改。新增定向/全网自检和同轨迹对照，代码带Modify并Git控制，未达目标不宣称成功。
+
+<!-- Modify by Michael Tan，20261029: start authorized ready-aware OE experiments with fixed policies and fair XY controls. -->
+
+### OE 同延迟目标试验阶段检查点（2026-10-29）
+
+正式与根src不变。隔离检查点806fc4f（就绪候选）、791cd3e（联合VA匹配）、4a01ca3（合法两跳）、564b61e（合法三跳）；模式与权重均在运行前固定。OFF/父模式逐级精确复现；三跳三组矩阵已通过：原种子0.06 OE81.412479/XY54.995927，种子42 0.06 OE80.972069/XY51.698924，原种子0.04 OE29.948870/XY29.723478，重载仍未达目标。VA577图参考、两/三跳评分反例、长包背压全网回归通过。新SA匹配仅改变已锁定flit的调度，593图参考已通过，同机制XY/OE固定矩阵与关闭控制运行中，不提前宣称同延迟或优于XY。数据/复现见congestion/docs/oe_xy_ready_selection_trials_20261029.md。
+
+<!-- Modify by Michael Tan，20261029: preserve trial checkpoints, fair comparisons and the remaining high-load gap. -->
+
+### OE 最大匹配公平性问题确认（2026-10-29）
+
+隔离SA持续竞争测试发现严格最大匹配会跳过可发送VC：目标41周期0服务、其他82传输，断言失败，必须加龄期保护后再验收，不能只凭中档均值通过。未保护版本0.08下OE567.859/XY207.318，目标未覆盖饱和区。正式src均未改；下阶段以固定AGE_LIMIT=PORT_NUM*VC_NUM=20保护VA/SA持续合格请求，并重跑同一反例及预声明全部五个负载/种子点，禁止删除失败点或修改断言期望。
+
+<!-- Modify by Michael Tan，20261029: require bounded-wait protection after a concrete persistent-request starvation failure. -->
+
+### OE/XY 同机制试验最终检查（2026-10-29）
+
+隔离候选/VA联合匹配/合法三跳/SA联合匹配检查点806fc4f、791cd3e、4a01ca3、564b61e、c837d51；2421b17记录严格最大匹配饥饿反例，d3f6638加入固定20合格等待机会的VA/SA龄期保护。保护版五点XY/OE平均：0.06原种子48.420217/48.075426、种子42为46.136860/46.830773、0.04原种子29.166975/28.907373、0.06种子7为47.688213/46.031417、0.08原种子212.116171/492.447056。前四点接近，压力点及部分P99未达目标。VA577图、SA593图、同一饥饿断言和XY/OE各3042包/14196flit长包背压回归通过；保留AGE0饥饿失败。统一脚本核验49组性能记录/20公平配对、源SHA、流量task和OFF精确对照。正式congestion/src及根src不变，未综合。SA等待分类存在VA组合方向不等于锁定SA方向的观测限制，不用其归因；延迟/包完整性/实际授权断言不受影响。完整表、命令、run路径与边界见congestion/docs/oe_xy_ready_selection_trials_20261029.md，最终入口congestion/experiments/oe_ready_aged/scripts/simulation/run_campaign.sh 5 1 1 1 -generic_top ALGORITHM=0/2。
+
+<!-- Modify by Michael Tan，20261029: record reproducible matched-latency progress, starvation protection, adverse pressure result and diagnostic limits. -->
