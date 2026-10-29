@@ -318,3 +318,9 @@ OE专项补充：新增 tb_congestion_oe_availability，使用真实router/VA/SA
 完成 [设计与测试报告 V1.1](docs/拥塞感知NoC设计与测试报告_V1.1_20261029.docx)，按“设计方案与实现、测试方案与实施、完成情况与测试结果”三个章节组织，共3页。突出完成内容，明确主要测试AGGREGATION=0（平均），保留五组实测数据。已完成OOXML、分页和表格预览检查，Windows同名docs目录同步备份并核对SHA256。V1.0保留作历史版本。
 
 <!-- Modify by Michael Tan，20261029: simplify the Word report to three achievement-focused chapters and synchronize the Windows backup. -->
+
+### 2026-10-29：Word 报告第三版 V1.2
+
+完成 [设计与测试报告 V1.2](docs/拥塞感知NoC设计与测试报告_V1.2_20261029.docx)，保持三个主章节，共4页。详细补充两跳占用采集、OE合法候选、第二跳展开、平均/等权求和、VA预约与目的截断，并附具体评分算例。新增TwoAware平均聚合136.86周期及合法两跳三组92.60/96.80/30.26周期的配置、测试内容和结果，分别标明来源。已检查OOXML、分页和表格，并同步Windows同名docs目录、核对SHA256。
+
+<!-- Modify by Michael Tan，20261029: add detailed two-hop average-sensing design, directed verification and separately identified results to Word revision three. -->
