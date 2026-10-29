@@ -1,0 +1,3 @@
+algorithm,old_mean_total,new_mean_total,old_mean_queue,new_mean_queue,old_mean_network,new_mean_network,reduction_percent,cohort_packets,trace_hash
+XY,81.071679,58.628085,11.048302,0.759387,70.023377,57.868698,27.68364276753168,12277,d84c82f8
+OE,1774.974179,1092.088784,1444.830252,771.594526,330.143928,320.494258,38.472976287729985,12277,d84c82f8

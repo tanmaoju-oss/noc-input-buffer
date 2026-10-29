@@ -2065,3 +2065,15 @@ Result:
 - No RTL, testbench, result TXT, or Vivado simulation was changed or rerun.
 
 //Modify record completed packet-unit throughput curve and verification, Michael Tan, 20260724
+
+## 2026-10-29：安全多包接入修改启动
+
+用户授权仅修改congestion，不改根src；已建立修改前Git检查点c0bcd8f。将接入所有权归还从TAIL读出改为TAIL/HEADTAIL成功写入，保留元数据读出出队，禁止按~is_full_o开放VC。补充元数据接收背压，使用真实双路由器定向测试及容量、长包、路由/全网回归；所有新改代码含Modify标注。未完成验证前不宣称通过，不修改隔离历史实验副本。
+
+<!-- Modify by Michael Tan，20261029: start authorized packet-boundary admission release with regression protection. -->
+
+## 2026-10-29：安全多包接入修改与回归完成
+
+仅congestion/src/input_buffer_src_circular_full.sv改变设计：TAIL/HEADTAIL成功写入才归还上游接入资格，TAIL读出只弹元数据；保留拒收与包顺序保护、7关闭/1重开滞回，增加元数据满接收保护，未恢复~is_full_o分配。新双路由器XY/OE测试证明第一包未读出时第二包经真实VA进入同一VC，停读占用7/两条元数据，前包开放时竞争包不得重用其VC。100步边界及原64组容量/拒写通过；XY/OE/OneAware/TwoAware全网12阶段12168包/56784flit、54756项采集及默认路由自检均PASS。高负载同轨迹0.06下两组15260包全送达，网络FIFO最大7；XY总延迟81.072→58.628、OE1774.974→1092.089，剩余OE差距未解决。所有代码改动含Modify/Original，修改前Git检查点c0bcd8f；正式提交/推送随后记录。命令、源码SHA、全部run和限制见 [修改报告](congestion/docs/packet_admission_fix_20261029.md)。根src和历史隔离实验RTL不变，未综合。
+
+<!-- Modify by Michael Tan，20261029: record packet-boundary reuse implementation and passing safety, network and high-load regressions. -->

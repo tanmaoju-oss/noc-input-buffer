@@ -63,6 +63,9 @@ module input_buffer #(
     logic [META_POINTER_SIZE:0] num_packets;    // 当前排队的数据包数量
 
     // 元数据FIFO控制信号
+    //Modify separate completed ingress ownership from egress metadata removal, Michael Tan, 20261029
+    logic packet_write_done;
+    logic fifo_on_off;
     logic meta_push_cmd;          // 元数据入队命令（新数据包到达）
     logic meta_pop_cmd;           // 元数据出队命令（数据包完成）
     logic meta_alloc_cmd;         // VC分配命令
@@ -99,7 +102,7 @@ module input_buffer #(
         .data_o(read_flit),
         .is_full_o(is_full_o),
         .is_empty_o(is_empty_o),
-        .on_off_o(on_off_o),
+        .on_off_o(fifo_on_off), //Modify retain FIFO hysteresis before metadata admission guard, Michael Tan, 20261029
         .num_flits_o(priority_usage_o)  // 【修改】连接占用数输出
     );
   
@@ -162,6 +165,10 @@ module input_buffer #(
     
     // ========== 元数据FIFO控制命令 ==========
     assign meta_push_cmd = accept_write & is_head_flit;    // 新数据包开始时入队
+    //Modify return ingress ownership only after an accepted complete packet, never on free space, Michael Tan, 20261029
+    assign packet_write_done = accept_write & (is_tail_input_flit | is_headtail_flit);
+    //Modify block a new HEAD if metadata is full; an open packet may finish, Michael Tan, 20261029
+    assign on_off_o = fifo_on_off & (~meta_full | write_packet_open);
     assign meta_pop_cmd = accept_read & is_tail_flit;      // 数据包结束时出队
     assign meta_alloc_cmd = vc_valid_i & has_packet & ~meta_head.vc_allocated;  // VC分配
 
@@ -190,7 +197,8 @@ module input_buffer #(
         begin
             // 输出信号更新
             //vc_allocatable_o <= ~is_full_o;//Original, Michael Tan, 20261028
-            vc_allocatable_o <= meta_pop_cmd;//Modify release VC only after packet-tail dequeue, Michael Tan, 20261028
+            //vc_allocatable_o <= meta_pop_cmd;//Original, Michael Tan, 20261029
+            vc_allocatable_o <= packet_write_done;//Modify release ingress ownership at accepted TAIL/HEADTAIL write, Michael Tan, 20261029
             
             // 错误检测
             error_o <= (write_i & ~accept_write) |           // 写操作被拒绝

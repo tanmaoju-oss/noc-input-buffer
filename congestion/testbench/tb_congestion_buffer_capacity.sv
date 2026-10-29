@@ -74,6 +74,8 @@ module tb_congestion_buffer_capacity;
                 check_errors(0);
                 for(int p=1;p<PORT_NUM;p++) begin
                     check(occupancy[p][v] == k+1,$sformatf("occupancy after fill p=%0d v=%0d k=%0d actual=%0d data=%h valid=%b",p,v,k,occupancy[p][v],data_i[p],valid_i[p]));
+                    //Modify check ingress release exactly once per accepted complete packet, Michael Tan, 20261029
+                    check(allocatable[p][v] === (k%length==length-1),"accepted input tail release pulse");
                     check(packets[p][v] == k/length+1,"packet metadata after fill");
                     check(on_off[p][v] === (k+1 < 7),"flow control must close at seven flits");
                 end
@@ -97,6 +99,7 @@ module tb_congestion_buffer_capacity;
                 check(errors[p] === (1 << v),"overflow must report only selected VC");
                 check(occupancy[p][v] == DEPTH,"overflow changed occupancy");
                 check(packets[p][v] == DEPTH/length,"overflow changed packet count");
+                check(allocatable[p][v] === 1'b0,"rejected write must not release VC");//Modify rejected traffic cannot return ownership, Michael Tan, 20261029
             end
         end
         @(negedge clk);
@@ -130,7 +133,8 @@ module tb_congestion_buffer_capacity;
                 @(posedge clk); #1; check_errors(0);
                 for(int p=1;p<PORT_NUM;p++) begin
                     check(occupancy[p][v] == DEPTH-k-1,"drain occupancy");
-                    check(allocatable[p][v] === (k%length==length-1),"tail release pulse");
+                    //check(allocatable[p][v] === (k%length==length-1),"tail release pulse");//Original, Michael Tan, 20261029
+                    check(allocatable[p][v] === 1'b0,"readout must not release ingress twice");//Modify egress pop is independent of ingress release, Michael Tan, 20261029
                 end
                 @(negedge clk);
                 for(int p=1;p<PORT_NUM;p++) sa.valid_sel[p]=0;
