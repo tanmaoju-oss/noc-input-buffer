@@ -59,4 +59,6 @@ bash torus/scripts/simulation/run_tb_torus_congestion.sh
 
 ## Git 与交付
 
-待本次提交、推送和 Windows 同步检查后补齐；保留 Windows 既有修改。
+实现提交 `6d778dadbee4191e501fcf802621ede374275fae` 已推送至 `origin/chore/reorganize-project-layout`。Windows `E:\Codex-Project\NoC-XY` 已 fetch，但 `git pull --ff-only` 被既有 AGENTS/README、板级脚本/RTL 修改及未跟踪 congestion 等文件阻挡，HEAD 保持 `cdcc7a9d80226b314da695ee2d2e1af6f6d18e41`；未覆盖、丢弃或 stash 既有工作。Windows 工作树同步尚未完成。
+
+本次提交只纳入 Torus 子项目及根目录文档中的 Torus 章节；其他项目已有修改留在工作区。本交付状态作为后续文档提交推送。

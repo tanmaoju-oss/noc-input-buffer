@@ -127,4 +127,6 @@ torus/
 
 首版已实现双向环绕、最短路径 XY、dateline 四类 VC、逐包 metadata 合法掩码及 VA 过滤；仅修改 `torus/`。WSL Vivado 2025.2 新验证通过：RC 261120 次检查、VA/metadata 定向、5×5/4×4/2×3/2×2 集成（950/464/114/68 包）、5×5 持续拥塞与复位后重传（625 包），均完整收发且最终 FIFO/VC 资源释放；Mesh 模式基本回归通过。依赖模型 49 种尺寸/41209 路径无环；不等于完整 RTL 形式化证明。命令、源码指纹、日志路径、失败及边界见 [验证报告](docs/torus_verification_20261102.md) 和 [修改记录](docs/修改记录.md)。未运行综合或板级验证。
 
+实现提交 `6d778dadbee4191e501fcf802621ede374275fae` 已推送至 `origin/chore/reorganize-project-layout`。Windows `E:\Codex-Project\NoC-XY` 已 fetch，但 `git pull --ff-only` 被既有 AGENTS/README、板级脚本/RTL 修改及未跟踪 congestion 等文件阻挡，HEAD 保持 `cdcc7a9d80226b314da695ee2d2e1af6f6d18e41`；未覆盖、丢弃或 stash 既有工作。Windows 工作树同步尚未完成。
+
 <!-- Modify by Michael Tan，20261102: start first Torus routing, VC and topology implementation. -->
