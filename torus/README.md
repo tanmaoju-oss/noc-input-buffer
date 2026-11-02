@@ -37,6 +37,8 @@ torus/
 
 <!-- Modify by Michael Tan，20261102: add the mandatory per-change log entry point. -->
 
+首版具体方案见 [实现方案详解](docs/torus_implementation_20261102.md)，原始改造分析与实测结果分别保留在设计分析和验证报告中。
+
 ## 当前状态（2026-11-02）
 
 已实现真正的 Torus 环绕连接、最短路径 XY、dateline 四类 VC 和逐包合法掩码；详细测试证据见 [首版验证报告](docs/torus_verification_20261102.md)。历史初始化/导入记录保留，以下较早的“尚未实现”不代表当前状态。未开展综合、板级验证或性能比较。

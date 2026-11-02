@@ -16,6 +16,12 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 
 ## Torus 子项目（2026-10-21 建立）
 
+### 2026-11-02：首版 Torus 方案详解
+
+已补充 [首版实现方案详解](torus/docs/torus_implementation_20261102.md)，按实现提交 `6d778da` 说明连接映射、路由公式、dateline VC 转换与逐跳示例、逐包 metadata、VA/SA、流控时序、错误和验证边界。本次只修改文档，核对链接、格式、示例路径及源码对应关系，未重跑仿真。
+
+<!-- Modify by Michael Tan，20261102: document actual Torus design in detail without changing RTL. -->
+
 ### 2026-11-02：Torus 首版实现与调试（通过首轮验证）
 
 首版已实现双向环绕、最短路径 XY、dateline 四类 VC、逐包 metadata 合法掩码及 VA 过滤；仅修改 `torus/`。WSL Vivado 2025.2 新验证通过：RC 261120 次检查、VA/metadata 定向、5×5/4×4/2×3/2×2 集成（950/464/114/68 包）、5×5 持续拥塞与复位后重传（625 包），均完整收发且最终 FIFO/VC 资源释放；Mesh 模式基本回归通过。依赖模型 49 种尺寸/41209 路径无环；不等于完整 RTL 形式化证明。命令、源码指纹、日志路径、失败及边界见 [验证报告](torus/docs/torus_verification_20261102.md) 和 [修改记录](torus/docs/修改记录.md)。未运行综合或板级验证。

@@ -2,6 +2,8 @@
 
 <!-- Modify by Michael Tan，20261102: record first actual Torus implementation and fresh simulation evidence. -->
 
+设计细节见 [Torus 首版实现方案详解](torus_implementation_20261102.md)；本报告集中记录验证证据。
+
 ## 实现内容
 
 首版在 `torus/src/` 新增 `torus.sv`，将每行/列边界的双向数据和反向流控回接；保留 2 节点尺寸下的独立平行端口。路由采用最短路径 X 后 Y，等距选 EAST/SOUTH。VC0/1、VC2/3 分别对应 X/Y dateline 前后类别，逐包 metadata 保存合法掩码，VA 的请求和分配均过滤掩码。共享模块默认 Mesh 模式，Torus 顶层显式使能。

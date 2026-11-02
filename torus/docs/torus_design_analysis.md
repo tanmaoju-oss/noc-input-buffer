@@ -2,6 +2,8 @@
 
 <!-- Modify by Michael Tan，20261021: document source-based Torus implementation plan without RTL changes. -->
 
+本次实际实现的完整说明见 [Torus 首版实现方案详解](torus_implementation_20261102.md)，包括连接映射、路由公式、逐跳 VC 示例、metadata 生命周期及流控时序。
+
 ## 2026-11-02 实施状态
 
 首版已在 `torus/src/` 实现，验证结果以 [验证报告](torus_verification_20261102.md) 和 [修改记录](修改记录.md) 为准。以下 2026-10-21 分析保留作为方案来源，其中“尚未实施/未仿真”描述为历史状态。
