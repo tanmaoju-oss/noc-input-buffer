@@ -14,6 +14,48 @@ NoC 输入缓冲区设计、验证与性能仿真项目。
 先读 AGENTS.md，然后继续。
 ```
 
+## Torus 子项目（2026-10-21 建立）
+
+### 2026-11-02：Torus 首版实现与调试（通过首轮验证）
+
+首版已实现双向环绕、最短路径 XY、dateline 四类 VC、逐包 metadata 合法掩码及 VA 过滤；仅修改 `torus/`。WSL Vivado 2025.2 新验证通过：RC 261120 次检查、VA/metadata 定向、5×5/4×4/2×3/2×2 集成（950/464/114/68 包）、5×5 持续拥塞与复位后重传（625 包），均完整收发且最终 FIFO/VC 资源释放；Mesh 模式基本回归通过。依赖模型 49 种尺寸/41209 路径无环；不等于完整 RTL 形式化证明。命令、源码指纹、日志路径、失败及边界见 [验证报告](torus/docs/torus_verification_20261102.md) 和 [修改记录](torus/docs/修改记录.md)。未运行综合或板级验证。
+
+<!-- Modify by Michael Tan，20261102: start first Torus routing, VC and topology implementation. -->
+
+### 2026-11-02：建立 Torus 独立 Mesh 基线（完成）
+
+已新增独立 `torus/testbench/tb_torus_mesh_baseline.sv` 和 `torus/scripts/simulation/run_tb_torus_mesh_baseline.sh`。命令 `bash torus/scripts/simulation/run_tb_torus_mesh_baseline.sh` 在 WSL Vivado 2025.2 沙箱外通过，日志 `torus/vivado_sim_wsl/tb_torus_mesh_baseline_sim/run_uQSII0Om/xsim.log` 报告 `[TB_TORUS_MESH_BASELINE] PASSED`：2×3 网络 `(0,0) → (1,2)` 两个 flit，目的、顺序、负载及错误信号检查通过。仅为单包基本传输证据；未验证全源目的、拥塞或 Torus。25 个 RTL 的导入 SHA256 复核一致。下一步固定 dateline VC 状态表和通道依赖模型。
+
+<!-- Modify by Michael Tan，20261102: start isolated Torus Mesh baseline verification. -->
+
+### 2026-11-02：Torus 逐次修改记录规范
+
+- 每次修改 Torus 子项目，必须在 [torus/docs/修改记录.md](torus/docs/修改记录.md) 追加独立条目，记录日期、修改目的、涉及文件、具体改动、验证命令、结果及日志路径、遗留问题和 Git 提交/推送/Windows 同步状态。
+- 开始修改时登记目的与范围，完成后补齐实际结果；未测试、失败或未提交须如实注明，不用计划代替结果。该记录与 `torus/README.md` 的持续进度及根目录阶段记录配套维护。
+
+<!-- Modify by Michael Tan，20261102: require a per-change Torus log with purpose, validation and Git synchronization evidence. -->
+
+### 2026-10-23：外部参考仓库
+
+已克隆 `fatemekhasraji/Torus-Systolic-array-HDL` 至 `torus/docs/reference_repositories/Torus-Systolic-array-HDL/`，提交 `6284e28ebdca0d22c15b27639616e6dfae719eaa`，保留独立 Git 历史且源码未改。该仓库为矩阵乘法脉动阵列，初步仅参考环绕连接；详细记录见 `torus/docs/reference_repositories/README.md`。未修改 RTL 或运行仿真/综合。
+
+<!-- Modify by Michael Tan，20261023: record external Torus reference repository and scope. -->
+
+### 2026-10-21：Mesh 基线复制与 Torus 改造分析
+
+用户要求将根目录 `src/` 完整复制到 `torus/src/`，并先分析模块改造。本次仅复制、逐文件校验和静态分析，不修改 RTL 逻辑、不运行仿真；详细结果维护于 `torus/README.md` 和 `torus/docs/torus_design_analysis.md`。
+
+<!-- Modify by Michael Tan，20261021: record Torus baseline import and analysis scope. -->
+
+已完成：25 个源文件复制至 `torus/src/` 并逐文件字节核对一致，来源 HEAD `bf1ae956bb9ebb2075a04d3d47a377ea0bb130a1`，源 `src/` 工作区干净。静态分析见 [torus/docs/torus_design_analysis.md](torus/docs/torus_design_analysis.md)：拟采用最短路径 XY、dateline VC 分类及逐包资格约束；尚未修改 RTL 或执行编译、仿真、综合。此前“尚未导入 RTL”为初始化时状态，以本条为准。
+
+- `torus/` 是基于本项目 NoC 改造为二维 Torus（环面）拓扑的独立子项目，目录布局沿用主项目。
+- Torus 的 RTL、TB、脚本、约束和生成结果均维护在 `torus/` 内；后续从主项目导入的 RTL 以副本维护，拓扑改造不直接修改根目录 `src/`，不自动回写主线。
+- [torus/README.md](torus/README.md) 是子项目持续进度入口，记录设计方案、来源版本、修改文件、执行命令、结果路径和验证结论；根目录文档保留子项目入口与关键阶段结论。
+- 本次已建立目录骨架和文档，尚未导入 RTL、实现环绕链路或路由/死锁规避方案，未运行编译、仿真或综合。后续先确定 Mesh 基线和 Torus 路由方案，再导入并修改副本。
+
+<!-- Modify by Michael Tan，20261021: establish isolated Torus workspace and documentation boundary. -->
+
 ## 当前项目路径
 
 ```text

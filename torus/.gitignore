@@ -1,0 +1,5 @@
+# Modify keep independent reference clone and generated results out of parent Git, Michael Tan, 20261102
+/docs/reference_repositories/Torus-Systolic-array-HDL/
+/vivado_sim_wsl/*/
+/vivado_sim_windows/*/
+/vivado_synthesis_windows/*/
