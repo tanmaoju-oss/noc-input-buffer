@@ -20,7 +20,6 @@ module rc_unit #(
     output logic route_error_o
 );
     int east_distance, west_distance, south_distance, north_distance;
-    int next_class;
     logic crossing, after_line;
     always_comb begin
         out_port_o = LOCAL;
@@ -28,7 +27,6 @@ module rc_unit #(
         route_error_o = 0;
         crossing = 0;
         after_line = 0;
-        next_class = 0;
         east_distance = 0; west_distance = 0;
         south_distance = 0; north_distance = 0;
         if (flit_label_i == HEAD || flit_label_i == HEADTAIL) begin
@@ -57,25 +55,24 @@ module rc_unit #(
                 if (out_port_o == EAST || out_port_o == WEST) begin
                     crossing = (out_port_o == EAST && X_CURRENT == NETWORK_SIZE_X-1) ||
                                (out_port_o == WEST && X_CURRENT == 0);
+                    //allowed_vcs_o = 1 << next_class;//Original, Michael Tan, 20261104
+                    //Modify retain dateline phase across either same-dimension replica, Michael Tan, 20261104
                     after_line = ((INPUT_PORT == EAST || INPUT_PORT == WEST) &&
-                                  input_vc_i == VC_X_AFTER);
-                    next_class = (after_line || crossing) ? VC_X_AFTER : VC_X_BEFORE;
-                    allowed_vcs_o = 1 << next_class;
-                    // Y->X and wrong dimension classes are not legal transit states.
-                    if (INPUT_PORT == NORTH || INPUT_PORT == SOUTH ||
-                       ((INPUT_PORT == EAST || INPUT_PORT == WEST) && input_vc_i > VC_X_AFTER))
+                                  int'(input_vc_i) >= TORUS_VCS_PER_PHASE);
+                    allowed_vcs_o = (after_line || crossing) ? VC_AFTER_MASK : VC_BEFORE_MASK;
+                    //Modify dimension comes from the physical port; only Y-to-X is forbidden, Michael Tan, 20261104
+                    if (INPUT_PORT == NORTH || INPUT_PORT == SOUTH)
                         route_error_o = 1;
                 end else if (out_port_o == NORTH || out_port_o == SOUTH) begin
                     crossing = (out_port_o == SOUTH && Y_CURRENT == NETWORK_SIZE_Y-1) ||
                                (out_port_o == NORTH && Y_CURRENT == 0);
+                    //Modify initialize Y phase on X-to-Y turn and ignore LOCAL injection VC phase, Michael Tan, 20261104
                     after_line = ((INPUT_PORT == NORTH || INPUT_PORT == SOUTH) &&
-                                  input_vc_i == VC_Y_AFTER);
-                    next_class = (after_line || crossing) ? VC_Y_AFTER : VC_Y_BEFORE;
-                    allowed_vcs_o = 1 << next_class;
-                    if (((INPUT_PORT == NORTH || INPUT_PORT == SOUTH) && input_vc_i < VC_Y_BEFORE) ||
-                        ((INPUT_PORT == EAST || INPUT_PORT == WEST) && input_vc_i > VC_X_AFTER))
-                        route_error_o = 1;
+                                  int'(input_vc_i) >= TORUS_VCS_PER_PHASE);
+                    allowed_vcs_o = (after_line || crossing) ? VC_AFTER_MASK : VC_BEFORE_MASK;
                 end
+                //Modify preserve four endpoint resources while network VC count is varied, Michael Tan, 20261104
+                if (out_port_o == LOCAL) allowed_vcs_o = VC_LOCAL_MASK;
                 if (route_error_o) allowed_vcs_o = '0;
             end
         end

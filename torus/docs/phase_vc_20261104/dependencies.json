@@ -1,0 +1,1325 @@
+[
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 2,
+    "paths": 16,
+    "resources": 24,
+    "edges": 52,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 3,
+    "paths": 36,
+    "resources": 48,
+    "edges": 126,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 4,
+    "paths": 64,
+    "resources": 68,
+    "edges": 204,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 5,
+    "paths": 100,
+    "resources": 88,
+    "edges": 298,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 6,
+    "paths": 144,
+    "resources": 108,
+    "edges": 368,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 7,
+    "paths": 196,
+    "resources": 128,
+    "edges": 438,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 2,
+    "ny": 8,
+    "paths": 256,
+    "resources": 148,
+    "edges": 508,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 2,
+    "paths": 36,
+    "resources": 48,
+    "edges": 126,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 3,
+    "paths": 81,
+    "resources": 90,
+    "edges": 297,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 4,
+    "paths": 144,
+    "resources": 126,
+    "edges": 450,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 5,
+    "paths": 225,
+    "resources": 162,
+    "edges": 627,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 6,
+    "paths": 324,
+    "resources": 198,
+    "edges": 768,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 7,
+    "paths": 441,
+    "resources": 234,
+    "edges": 909,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 3,
+    "ny": 8,
+    "paths": 576,
+    "resources": 270,
+    "edges": 1050,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 2,
+    "paths": 64,
+    "resources": 68,
+    "edges": 212,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 3,
+    "paths": 144,
+    "resources": 126,
+    "edges": 474,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 4,
+    "paths": 256,
+    "resources": 176,
+    "edges": 704,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 5,
+    "paths": 400,
+    "resources": 226,
+    "edges": 966,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 6,
+    "paths": 576,
+    "resources": 276,
+    "edges": 1180,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 7,
+    "paths": 784,
+    "resources": 326,
+    "edges": 1394,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 4,
+    "ny": 8,
+    "paths": 1024,
+    "resources": 376,
+    "edges": 1608,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 2,
+    "paths": 100,
+    "resources": 88,
+    "edges": 314,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 3,
+    "paths": 225,
+    "resources": 162,
+    "edges": 675,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 4,
+    "paths": 400,
+    "resources": 226,
+    "edges": 990,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 5,
+    "paths": 625,
+    "resources": 290,
+    "edges": 1345,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 6,
+    "paths": 900,
+    "resources": 354,
+    "edges": 1640,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 7,
+    "paths": 1225,
+    "resources": 418,
+    "edges": 1935,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 5,
+    "ny": 8,
+    "paths": 1600,
+    "resources": 482,
+    "edges": 2230,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 2,
+    "paths": 144,
+    "resources": 108,
+    "edges": 392,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 3,
+    "paths": 324,
+    "resources": 198,
+    "edges": 840,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 4,
+    "paths": 576,
+    "resources": 276,
+    "edges": 1228,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 5,
+    "paths": 900,
+    "resources": 354,
+    "edges": 1664,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 6,
+    "paths": 1296,
+    "resources": 432,
+    "edges": 2028,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 7,
+    "paths": 1764,
+    "resources": 510,
+    "edges": 2392,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 6,
+    "ny": 8,
+    "paths": 2304,
+    "resources": 588,
+    "edges": 2756,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 2,
+    "paths": 196,
+    "resources": 128,
+    "edges": 470,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 3,
+    "paths": 441,
+    "resources": 234,
+    "edges": 1005,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 4,
+    "paths": 784,
+    "resources": 326,
+    "edges": 1466,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 5,
+    "paths": 1225,
+    "resources": 418,
+    "edges": 1983,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 6,
+    "paths": 1764,
+    "resources": 510,
+    "edges": 2416,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 7,
+    "paths": 2401,
+    "resources": 602,
+    "edges": 2849,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 7,
+    "ny": 8,
+    "paths": 3136,
+    "resources": 694,
+    "edges": 3282,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 2,
+    "paths": 256,
+    "resources": 148,
+    "edges": 548,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 3,
+    "paths": 576,
+    "resources": 270,
+    "edges": 1170,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 4,
+    "paths": 1024,
+    "resources": 376,
+    "edges": 1704,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 5,
+    "paths": 1600,
+    "resources": 482,
+    "edges": 2302,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 6,
+    "paths": 2304,
+    "resources": 588,
+    "edges": 2804,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 7,
+    "paths": 3136,
+    "resources": 694,
+    "edges": 3306,
+    "acyclic": true
+  },
+  {
+    "vc_num": 4,
+    "nx": 8,
+    "ny": 8,
+    "paths": 4096,
+    "resources": 800,
+    "edges": 3808,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 2,
+    "paths": 16,
+    "resources": 40,
+    "edges": 132,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 3,
+    "paths": 36,
+    "resources": 84,
+    "edges": 342,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 4,
+    "paths": 64,
+    "resources": 120,
+    "edges": 592,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 5,
+    "paths": 100,
+    "resources": 156,
+    "edges": 906,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 6,
+    "paths": 144,
+    "resources": 192,
+    "edges": 1124,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 7,
+    "paths": 196,
+    "resources": 228,
+    "edges": 1342,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 2,
+    "ny": 8,
+    "paths": 256,
+    "resources": 264,
+    "edges": 1560,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 2,
+    "paths": 36,
+    "resources": 84,
+    "edges": 342,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 3,
+    "paths": 81,
+    "resources": 162,
+    "edges": 873,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 4,
+    "paths": 144,
+    "resources": 228,
+    "edges": 1368,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 5,
+    "paths": 225,
+    "resources": 294,
+    "edges": 1959,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 6,
+    "paths": 324,
+    "resources": 360,
+    "edges": 2406,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 7,
+    "paths": 441,
+    "resources": 426,
+    "edges": 2853,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 3,
+    "ny": 8,
+    "paths": 576,
+    "resources": 492,
+    "edges": 3300,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 2,
+    "paths": 64,
+    "resources": 120,
+    "edges": 624,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 3,
+    "paths": 144,
+    "resources": 228,
+    "edges": 1464,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 4,
+    "paths": 256,
+    "resources": 320,
+    "edges": 2224,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 5,
+    "paths": 400,
+    "resources": 412,
+    "edges": 3112,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 6,
+    "paths": 576,
+    "resources": 504,
+    "edges": 3808,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 7,
+    "paths": 784,
+    "resources": 596,
+    "edges": 4504,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 4,
+    "ny": 8,
+    "paths": 1024,
+    "resources": 688,
+    "edges": 5200,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 2,
+    "paths": 100,
+    "resources": 156,
+    "edges": 970,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 3,
+    "paths": 225,
+    "resources": 294,
+    "edges": 2151,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 4,
+    "paths": 400,
+    "resources": 412,
+    "edges": 3208,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 5,
+    "paths": 625,
+    "resources": 530,
+    "edges": 4425,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 6,
+    "paths": 900,
+    "resources": 648,
+    "edges": 5402,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 7,
+    "paths": 1225,
+    "resources": 766,
+    "edges": 6379,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 5,
+    "ny": 8,
+    "paths": 1600,
+    "resources": 884,
+    "edges": 7356,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 2,
+    "paths": 144,
+    "resources": 192,
+    "edges": 1220,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 3,
+    "paths": 324,
+    "resources": 360,
+    "edges": 2694,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 4,
+    "paths": 576,
+    "resources": 504,
+    "edges": 4000,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 5,
+    "paths": 900,
+    "resources": 648,
+    "edges": 5498,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 6,
+    "paths": 1296,
+    "resources": 792,
+    "edges": 6708,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 7,
+    "paths": 1764,
+    "resources": 936,
+    "edges": 7918,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 6,
+    "ny": 8,
+    "paths": 2304,
+    "resources": 1080,
+    "edges": 9128,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 2,
+    "paths": 196,
+    "resources": 228,
+    "edges": 1470,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 3,
+    "paths": 441,
+    "resources": 426,
+    "edges": 3237,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 4,
+    "paths": 784,
+    "resources": 596,
+    "edges": 4792,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 5,
+    "paths": 1225,
+    "resources": 766,
+    "edges": 6571,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 6,
+    "paths": 1764,
+    "resources": 936,
+    "edges": 8014,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 7,
+    "paths": 2401,
+    "resources": 1106,
+    "edges": 9457,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 7,
+    "ny": 8,
+    "paths": 3136,
+    "resources": 1276,
+    "edges": 10900,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 2,
+    "paths": 256,
+    "resources": 264,
+    "edges": 1720,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 3,
+    "paths": 576,
+    "resources": 492,
+    "edges": 3780,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 4,
+    "paths": 1024,
+    "resources": 688,
+    "edges": 5584,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 5,
+    "paths": 1600,
+    "resources": 884,
+    "edges": 7644,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 6,
+    "paths": 2304,
+    "resources": 1080,
+    "edges": 9320,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 7,
+    "paths": 3136,
+    "resources": 1276,
+    "edges": 10996,
+    "acyclic": true
+  },
+  {
+    "vc_num": 8,
+    "nx": 8,
+    "ny": 8,
+    "paths": 4096,
+    "resources": 1472,
+    "edges": 12672,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 2,
+    "paths": 16,
+    "resources": 72,
+    "edges": 388,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 3,
+    "paths": 36,
+    "resources": 156,
+    "edges": 1062,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 4,
+    "paths": 64,
+    "resources": 224,
+    "edges": 1944,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 5,
+    "paths": 100,
+    "resources": 292,
+    "edges": 3082,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 6,
+    "paths": 144,
+    "resources": 360,
+    "edges": 3836,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 7,
+    "paths": 196,
+    "resources": 428,
+    "edges": 4590,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 2,
+    "ny": 8,
+    "paths": 256,
+    "resources": 496,
+    "edges": 5344,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 2,
+    "paths": 36,
+    "resources": 156,
+    "edges": 1062,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 3,
+    "paths": 81,
+    "resources": 306,
+    "edges": 2889,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 4,
+    "paths": 144,
+    "resources": 432,
+    "edges": 4644,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 5,
+    "paths": 225,
+    "resources": 558,
+    "edges": 6783,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 6,
+    "paths": 324,
+    "resources": 684,
+    "edges": 8346,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 7,
+    "paths": 441,
+    "resources": 810,
+    "edges": 9909,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 3,
+    "ny": 8,
+    "paths": 576,
+    "resources": 936,
+    "edges": 11472,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 2,
+    "paths": 64,
+    "resources": 224,
+    "edges": 2072,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 3,
+    "paths": 144,
+    "resources": 432,
+    "edges": 5028,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 4,
+    "paths": 256,
+    "resources": 608,
+    "edges": 7760,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 5,
+    "paths": 400,
+    "resources": 784,
+    "edges": 11004,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 6,
+    "paths": 576,
+    "resources": 960,
+    "edges": 13480,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 7,
+    "paths": 784,
+    "resources": 1136,
+    "edges": 15956,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 4,
+    "ny": 8,
+    "paths": 1024,
+    "resources": 1312,
+    "edges": 18432,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 2,
+    "paths": 100,
+    "resources": 292,
+    "edges": 3338,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 3,
+    "paths": 225,
+    "resources": 558,
+    "edges": 7551,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 4,
+    "paths": 400,
+    "resources": 784,
+    "edges": 11388,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 5,
+    "paths": 625,
+    "resources": 1010,
+    "edges": 15865,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 6,
+    "paths": 900,
+    "resources": 1236,
+    "edges": 19382,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 7,
+    "paths": 1225,
+    "resources": 1462,
+    "edges": 22899,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 5,
+    "ny": 8,
+    "paths": 1600,
+    "resources": 1688,
+    "edges": 26416,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 2,
+    "paths": 144,
+    "resources": 360,
+    "edges": 4220,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 3,
+    "paths": 324,
+    "resources": 684,
+    "edges": 9498,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 4,
+    "paths": 576,
+    "resources": 960,
+    "edges": 14248,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 5,
+    "paths": 900,
+    "resources": 1236,
+    "edges": 19766,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 6,
+    "paths": 1296,
+    "resources": 1512,
+    "edges": 24132,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 7,
+    "paths": 1764,
+    "resources": 1788,
+    "edges": 28498,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 6,
+    "ny": 8,
+    "paths": 2304,
+    "resources": 2064,
+    "edges": 32864,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 2,
+    "paths": 196,
+    "resources": 428,
+    "edges": 5102,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 3,
+    "paths": 441,
+    "resources": 810,
+    "edges": 11445,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 4,
+    "paths": 784,
+    "resources": 1136,
+    "edges": 17108,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 5,
+    "paths": 1225,
+    "resources": 1462,
+    "edges": 23667,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 6,
+    "paths": 1764,
+    "resources": 1788,
+    "edges": 28882,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 7,
+    "paths": 2401,
+    "resources": 2114,
+    "edges": 34097,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 7,
+    "ny": 8,
+    "paths": 3136,
+    "resources": 2440,
+    "edges": 39312,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 2,
+    "paths": 256,
+    "resources": 496,
+    "edges": 5984,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 3,
+    "paths": 576,
+    "resources": 936,
+    "edges": 13392,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 4,
+    "paths": 1024,
+    "resources": 1312,
+    "edges": 19968,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 5,
+    "paths": 1600,
+    "resources": 1688,
+    "edges": 27568,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 6,
+    "paths": 2304,
+    "resources": 2064,
+    "edges": 33632,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 7,
+    "paths": 3136,
+    "resources": 2440,
+    "edges": 39696,
+    "acyclic": true
+  },
+  {
+    "vc_num": 16,
+    "nx": 8,
+    "ny": 8,
+    "paths": 4096,
+    "resources": 2816,
+    "edges": 45760,
+    "acyclic": true
+  }
+]

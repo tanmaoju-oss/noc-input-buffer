@@ -27,6 +27,7 @@ module torus_rc_case #(parameter NX=5, NY=5)(output bit done);
                     logic [VC_NUM-1:0] mask;
                     bit bad, past;
                     int fwd, rev, cls;
+                    //Modify update the maintained regression oracle to replicated dateline phases, Michael Tan, 20261104
                     want=LOCAL; mask='1; bad=0; past=0; cls=0;
                     if (lab==HEAD || lab==HEADTAIL) begin
                         if(tx>=NX || ty>=NY) begin bad=1; mask=0; end
@@ -34,18 +35,19 @@ module torus_rc_case #(parameter NX=5, NY=5)(output bit done);
                             if (tx!=x) begin
                                 fwd=(tx-x+NX)%NX; rev=(x-tx+NX)%NX;
                                 want=(fwd<=rev)?EAST:WEST;
-                                past=(p==EAST || p==WEST) && v==1;
+                                past=(p==EAST || p==WEST) && v>=VC_NUM/2;
                                 past|=(want==EAST && x==NX-1)||(want==WEST && x==0);
-                                cls=past?1:0; mask=1<<cls;
-                                bad=(p==NORTH || p==SOUTH)||((p==EAST || p==WEST)&&v>1);
+                                mask=past?VC_AFTER_MASK:VC_BEFORE_MASK;
+                                bad=(p==NORTH || p==SOUTH);
                             end else if (ty!=y) begin
                                 fwd=(ty-y+NY)%NY; rev=(y-ty+NY)%NY;
                                 want=(fwd<=rev)?SOUTH:NORTH;
-                                past=(p==NORTH || p==SOUTH) && v==3;
+                                past=(p==NORTH || p==SOUTH) && v>=VC_NUM/2;
                                 past|=(want==SOUTH && y==NY-1)||(want==NORTH && y==0);
-                                cls=past?3:2; mask=1<<cls;
-                                bad=((p==NORTH || p==SOUTH)&&v<2)||((p==EAST || p==WEST)&&v>1);
+                                mask=past?VC_AFTER_MASK:VC_BEFORE_MASK;
+                                bad=0;
                             end
+                            if(want==LOCAL) mask=VC_LOCAL_MASK;
                             if(bad) mask=0;
                         end
                     end

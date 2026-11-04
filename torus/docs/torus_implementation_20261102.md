@@ -1,5 +1,9 @@
 # Torus 首版实现方案详解（2026-11-02）
 
+> 2026-11-04更新：四类单VC规则为首版历史方案；当前已改为输入端口区分维度、前后阶段多副本。最新实现与数据见[阶段VC验证报告](phase_vc_verification_20261104.md)。
+
+<!-- Modify by Michael Tan，20261104: distinguish historical global classes from the current phase-pool implementation. -->
+
 <!-- Modify by Michael Tan，20261102: explain implemented Torus topology, routing, dateline VC and packet lifecycle from actual RTL. -->
 
 本说明对应实现提交 `6d778da`，描述本次已经写入 RTL 并完成首轮功能仿真的方案。后续文档提交不代表新增 RTL 功能。测试命令、各次日志与结果见 [验证报告](torus_verification_20261102.md)，变更过程见 [修改记录](修改记录.md)。

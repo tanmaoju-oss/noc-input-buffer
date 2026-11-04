@@ -1,0 +1,5 @@
+mode,length,packets,flits,head_interval,packet_gap,periodic_flits_per_cycle,downstream_vcs,run
+mesh,4,256,1024,4,0,1.0,0/1,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_singlehop_service_sim/run_sharedmesh_VCsRdyH8/length4
+mesh,16,256,4096,16,0,1.0,0/1,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_singlehop_service_sim/run_sharedmesh_VCsRdyH8/length16
+torus,4,256,1024,8,4,0.5,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_singlehop_service_sim/run_torus_3N3I1lUQ/length4
+torus,16,256,4096,20,4,0.8,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_singlehop_service_sim/run_torus_3N3I1lUQ/length16

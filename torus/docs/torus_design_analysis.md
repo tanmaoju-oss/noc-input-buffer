@@ -1,5 +1,9 @@
 # Mesh 到二维 Torus 的改造分析
 
+> 2026-11-04更新：四类单VC规则为首版历史方案；当前已改为输入端口区分维度、前后阶段多副本。最新实现与数据见[阶段VC验证报告](phase_vc_verification_20261104.md)。
+
+<!-- Modify by Michael Tan，20261104: distinguish historical global classes from the current phase-pool implementation. -->
+
 <!-- Modify by Michael Tan，20261021: document source-based Torus implementation plan without RTL changes. -->
 
 本次实际实现的完整说明见 [Torus 首版实现方案详解](torus_implementation_20261102.md)，包括连接映射、路由公式、逐跳 VC 示例、metadata 生命周期及流控时序。

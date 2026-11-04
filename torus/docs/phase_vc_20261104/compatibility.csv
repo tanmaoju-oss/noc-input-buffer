@@ -1,0 +1,4 @@
+top,run,pass_line
+tb_torus_rc,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_rc_sim/run_Y231Py0K,[TB_TORUS_RC] PASSED
+tb_torus_integration,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_integration_sim/run_jFB2M9q9,[TB_TORUS_INTEGRATION] PASSED size=5x5 packets=950 completed=950 flits=2414 link_flits=5784 seams=286/286/301/301
+tb_torus_congestion,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_congestion_sim/run_wBCMt5Jy,[TB_TORUS_CONGESTION] PASSED size=5x5 packets=625 completed=625 flits=2050 link_flits=4660 seams=325/195/345/215

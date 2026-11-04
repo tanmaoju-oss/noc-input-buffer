@@ -1,0 +1,1 @@
+PASS: six simulator runs; identical six traces; three fixed policies exactly reproduce original trace/summary/packet timestamps; both shared-Mesh policies exactly match original Mesh; counts/timestamps/current source hashes verified.

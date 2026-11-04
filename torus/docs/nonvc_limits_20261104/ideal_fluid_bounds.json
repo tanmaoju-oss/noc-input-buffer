@@ -1,0 +1,16 @@
+{
+  "mesh": {
+    "max_link_load_per_unit_source_flit_rate": 1.25,
+    "physical_link_only_bound": 0.8,
+    "endpoint_bound": 1,
+    "ideal_fluid_bound_flits_per_node_cycle": 0.8,
+    "model": "uniform nonself mean flow; fixed routes; perfect service; ignores VC, scheduling, bursts and finite buffers"
+  },
+  "torus": {
+    "max_link_load_per_unit_source_flit_rate": 0.625,
+    "physical_link_only_bound": 1.6,
+    "endpoint_bound": 1,
+    "ideal_fluid_bound_flits_per_node_cycle": 1,
+    "model": "uniform nonself mean flow; fixed routes; perfect service; ignores VC, scheduling, bursts and finite buffers"
+  }
+}

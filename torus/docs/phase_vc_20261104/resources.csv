@@ -1,0 +1,6 @@
+mode,physical_vcs_per_input,eligible_vcs_per_network_hop,endpoint_vcs,fifo_depth,flit_fifo_slots_per_input,flit_width_bits
+mesh,4,4,4,8,32,26
+legacy,4,1,4,8,32,26
+4,4,2,4,8,32,26
+8,8,4,4,8,64,27
+16,16,8,4,8,128,28

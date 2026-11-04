@@ -23,7 +23,8 @@ module torus #(
     //Modify reject unsupported geometry and coordinate truncation, Michael Tan, 20261102
     initial begin
         if (MESH_SIZE_X < 2 || MESH_SIZE_Y < 2 ||
-            MESH_SIZE_X > (1 << DEST_ADDR_SIZE_X) || MESH_SIZE_Y > (1 << DEST_ADDR_SIZE_Y) || VC_NUM != 4)
+            MESH_SIZE_X > (1 << DEST_ADDR_SIZE_X) || MESH_SIZE_Y > (1 << DEST_ADDR_SIZE_Y) ||
+            (VC_NUM != 4 && VC_NUM != 8 && VC_NUM != 16)) //Modify validate replicated phase configurations, Michael Tan, 20261104
             $fatal(1, "Unsupported Torus geometry or VC count");
     end
     genvar row, col;

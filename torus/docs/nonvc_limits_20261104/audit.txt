@@ -1,0 +1,1 @@
+PASS: four simulator runs; six original data files exactly reproduced per case; all four traces equal; per-router 3000-cycle coverage; VA/SA counts match previous observers; current source hashes verified; all 16 uniform cases satisfy derived RTL uncontended per-packet latency floor.

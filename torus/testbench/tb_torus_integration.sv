@@ -111,12 +111,10 @@ module tb_torus_integration #(
                         if (f.flit_label==HEAD || f.flit_label==HEADTAIL) begin
                             if (direction(x,y,f.data.head_data.x_dest,f.data.head_data.y_dest)!=p)
                                 $fatal(1,"nonminimal/wrong routing");
-                            if ((p==EAST || p==WEST) && f.vc_id>VC_X_AFTER) $fatal(1,"X class");
-                            if ((p==NORTH || p==SOUTH) && f.vc_id<VC_Y_BEFORE) $fatal(1,"Y class");
-                            if (((p==EAST && x==NX-1)||(p==WEST && x==0)) && f.vc_id!=VC_X_AFTER)
-                                $fatal(1,"X seam class");
-                            if (((p==SOUTH && y==NY-1)||(p==NORTH && y==0)) && f.vc_id!=VC_Y_AFTER)
-                                $fatal(1,"Y seam class");
+                            //Modify preserve seam checks with replicated phases; queued masks check every grant, Michael Tan, 20261104
+                            if (((p==EAST && x==NX-1)||(p==WEST && x==0)||
+                                 (p==SOUTH && y==NY-1)||(p==NORTH && y==0)) && int'(f.vc_id)<VC_NUM/2)
+                                $fatal(1,"seam used before-phase replica");
                         end
                     end
                 end

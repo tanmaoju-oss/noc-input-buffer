@@ -1,0 +1,7 @@
+mode,generated,sample,mean_latency,source_queue,network_latency,window_out,drain,policy,head_busy,head_busy_alternative,head_onoff,body_stall,run
+mesh,11889,8925,31.616470588235295,7.59047619047619,24.025994397759103,0.47806666666666664,29,0,14325,14265,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_mesh_00h1FbnU/policy0
+mesh,11889,8925,27.413221288515405,1.8277871148459384,25.58543417366947,0.47748,27,1,1366,0,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_mesh_00h1FbnU/policy1
+sharedmesh,11889,8925,31.616470588235295,7.59047619047619,24.025994397759103,0.47806666666666664,29,0,14325,14265,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_sharedmesh_cuqJfWCx/policy0
+sharedmesh,11889,8925,27.413221288515405,1.8277871148459384,25.58543417366947,0.47748,27,1,1366,0,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_sharedmesh_cuqJfWCx/policy1
+torus,11889,8925,800.9316526610644,770.843137254902,30.088515406162465,0.36402666666666667,1838,0,75743,74485,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_torus_5O9fsxpc/policy0
+torus,11889,8925,614.1866666666666,562.538487394958,51.648179271708685,0.3869066666666667,1367,1,65168,0,0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_conditions_control_sim/run_torus_5O9fsxpc/policy1

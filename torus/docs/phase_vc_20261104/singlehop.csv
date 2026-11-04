@@ -1,0 +1,11 @@
+mode,length,packets,head_interval,throughput,gap,run
+mesh,16,256,16,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_mesh_5x5_S8NG1O2i/length16
+mesh,4,256,4,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_mesh_5x5_S8NG1O2i/length4
+legacy,16,256,20,0.8,4,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_legacy_5x5_IZ1y6n40/length16
+legacy,4,256,8,0.5,4,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_legacy_5x5_IZ1y6n40/length4
+4,16,256,16,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_4_5x5_uWg4SIDc/length16
+4,4,256,4,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_4_5x5_uWg4SIDc/length4
+8,16,256,16,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_8_5x5_UpQitPlJ/length16
+8,4,256,4,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_8_5x5_UpQitPlJ/length4
+16,16,256,16,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_16_5x5_bGr35MKY/length16
+16,4,256,4,1.0,0,/home/tanma/Documents/Project/noc-input-buffer/torus/vivado_sim_wsl/tb_torus_phase_singlehop_sim/run_16_5x5_bGr35MKY/length4

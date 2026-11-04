@@ -1,0 +1,1 @@
+PASS: 50 performance cases; all 10 traffic traces identical across 5 modes; original Mesh and legacy exact trace/summary/packet timestamp reproduction; packet/timestamp/hop conservation; 25 functional case PASS logs including 10 single-hop cases and all 255 intervals each; current compiled-source hashes verified.

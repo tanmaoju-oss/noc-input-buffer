@@ -1,0 +1,1 @@
+top=tb_torus_phase_performance mode=mesh nx=5 ny=5 endpoint_vcs=4 buffer_depth=8 source_vc=id%4

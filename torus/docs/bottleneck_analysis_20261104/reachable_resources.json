@@ -1,0 +1,29 @@
+{
+  "mesh": {
+    "nonself_paths": 600,
+    "mean_hops": 3.3333333333333335,
+    "diameter": 8,
+    "directed_links": 80,
+    "installed_network_vcs": 320,
+    "reachable_network_vcs": 320,
+    "reachable_fraction": 1.0,
+    "vcs_per_link_histogram": {
+      "4": 80
+    },
+    "reachable_fifo_slots": 2560
+  },
+  "torus": {
+    "nonself_paths": 600,
+    "mean_hops": 2.5,
+    "diameter": 4,
+    "directed_links": 100,
+    "installed_network_vcs": 400,
+    "reachable_network_vcs": 120,
+    "reachable_fraction": 0.3,
+    "vcs_per_link_histogram": {
+      "2": 20,
+      "1": 80
+    },
+    "reachable_fifo_slots": 960
+  }
+}

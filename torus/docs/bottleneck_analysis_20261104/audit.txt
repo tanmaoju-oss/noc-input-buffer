@@ -1,0 +1,1 @@
+PASS: 4 nonintrusive profiles exactly match trace/packets/summary/stalls controls; per-VC VA/SA partitions and per-port transfer counts conserved; all network grants/headers/tails/releases paired; 4 single-hop runs pass with all 255 packet intervals checked; current source SHA256 verified.

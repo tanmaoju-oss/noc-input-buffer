@@ -7,11 +7,22 @@ package noc_params;
 	localparam DEST_ADDR_SIZE_Y = $clog2(MESH_SIZE_Y);
 
 	//localparam VC_NUM = 2;//Original, Michael Tan, 20260715
-	localparam VC_NUM = 4;//Modify expand the NoC from two to four virtual channels, Michael Tan, 20260715
+	//localparam VC_NUM = 4;//Original, Michael Tan, 20261104
+    //Modify support 4/8/16 physical VCs with four logical endpoint VCs, Michael Tan, 20261104
+`ifdef NOC_VC_NUM
+    localparam VC_NUM = `NOC_VC_NUM;
+`else
+    localparam VC_NUM = 4;
+`endif
 	localparam VC_SIZE = $clog2(VC_NUM);
-    //Modify define dateline classes without changing flit format, Michael Tan, 20261102
-    localparam VC_X_BEFORE = 0, VC_X_AFTER = 1;
-    localparam VC_Y_BEFORE = 2, VC_Y_AFTER = 3;
+    //localparam VC_X_BEFORE = 0, VC_X_AFTER = 1;//Original, Michael Tan, 20261104
+    //localparam VC_Y_BEFORE = 2, VC_Y_AFTER = 3;//Original, Michael Tan, 20261104
+    //Modify use input-port dimension and replicated before/after phase pools, Michael Tan, 20261104
+    localparam TORUS_VCS_PER_PHASE = VC_NUM / 2;
+    localparam ENDPOINT_VC_NUM = 4;
+    localparam logic [VC_NUM-1:0] VC_BEFORE_MASK = {VC_NUM{1'b1}} >> TORUS_VCS_PER_PHASE;
+    localparam logic [VC_NUM-1:0] VC_AFTER_MASK = ~VC_BEFORE_MASK;
+    localparam logic [VC_NUM-1:0] VC_LOCAL_MASK = {VC_NUM{1'b1}} >> (VC_NUM-ENDPOINT_VC_NUM);
 
 	localparam HEAD_PAYLOAD_SIZE = 16;
 
