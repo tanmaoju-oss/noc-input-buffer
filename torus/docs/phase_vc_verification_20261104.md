@@ -116,4 +116,6 @@ python3 torus/scripts/simulation/analyze_torus_phase_campaign.py torus/docs/phas
 
 ## Git与Windows交付
 
-待完成最终回归后按项目规则提交/推送；Windows工作副本只做fetch和保护性fast-forward，不覆盖既有修改。实际提交与同步结果完成后追加。
+实现与全部验证已提交`a837e1ac81ab449212b551a2082c580fe869a5cc`并推送`origin/chore/reorganize-project-layout`。Windows通过PowerShell执行fetch成功，`git pull --ff-only`因已有AGENTS/README、板级RTL/脚本修改，以及未跟踪congestion/综合文件中止；Windows HEAD仍为`cdcc7a9d80226b314da695ee2d2e1af6f6d18e41`。没有覆盖、删除或stash既有工作，工作树同步尚未完成。[同步证据摘要](phase_vc_20261104/windows_sync.txt)。
+
+Linux已有根AGENTS/README修改保留，Git只暂存本轮新增进度后缀及torus工作；未把其他子项目未跟踪文件加入提交。本节交付状态另以文档提交记录。

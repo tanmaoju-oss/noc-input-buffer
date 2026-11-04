@@ -200,3 +200,9 @@ torus/
 仅改noc/RC/torus参数检查3个RTL，默认4VC按2+2阶段划分，8/16为4+4/8+8；保留4个逻辑端点VC、归还/仲裁/流控。50性能点与25项新功能PASS，旧控制精确复现。默认4VC已消除单跳4周期气泡，0.12种子1均延迟21.512、8VC19.271、16VC19.293，Mesh31.616、旧版800.932。完整命令/日志/资源成本/限制见 [验证报告](docs/phase_vc_verification_20261104.md)。原默认入口的分类断言随协议维护，Git及Windows交付状态随后记录。
 
 <!-- Modify by Michael Tan，20261104: expose implemented phase VC pools and measured default/expanded results. -->
+
+### 2026-11-04：阶段VC改造 Git 交付与 Windows 状态
+
+实现及验证提交`a837e1ac81ab449212b551a2082c580fe869a5cc`已推送`origin/chore/reorganize-project-layout`。Windows fetch成功，pull --ff-only因既有AGENTS/README、板级RTL/脚本修改及未跟踪congestion/综合文件保护性中止；Windows HEAD仍为`cdcc7a9d80226b314da695ee2d2e1af6f6d18e41`。未覆盖、删除或stash既有工作。Linux既有根文档修改也保留，本轮只暂存新增进度记录。默认4VC新方案与完整资源对照见阶段VC验证报告，Windows工作树同步尚未完成。
+
+<!-- Modify by Michael Tan，20261104: record pushed phase-VC delivery and protected Windows synchronization blocker. -->

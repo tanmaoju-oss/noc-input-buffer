@@ -2251,3 +2251,9 @@ Result:
 命令`run_tb_torus_phase_*.sh`、`run_torus_phase_campaign.sh functional/performance`及`run_torus_phase_compatibility.sh`均在torus/scripts/simulation。完整日志清单、源码SHA、资源差异和边界见 [改造验证报告](torus/docs/phase_vc_verification_20261104.md)。根src无变化，未综合或板级验证；Git提交/推送及Windows保护性同步随后记录。
 
 <!-- Modify by Michael Tan，20261104: record passing phase-pool RTL implementation and exact-control performance campaign. -->
+
+### 2026-11-04：阶段VC改造 Git 交付与 Windows 状态
+
+实现及验证提交`a837e1ac81ab449212b551a2082c580fe869a5cc`已推送`origin/chore/reorganize-project-layout`。Windows fetch成功，pull --ff-only因既有AGENTS/README、板级RTL/脚本修改及未跟踪congestion/综合文件保护性中止；Windows HEAD仍为`cdcc7a9d80226b314da695ee2d2e1af6f6d18e41`。未覆盖、删除或stash既有工作。Linux既有根文档修改也保留，本轮只暂存新增进度记录。默认4VC新方案与完整资源对照见阶段VC验证报告，Windows工作树同步尚未完成。
+
+<!-- Modify by Michael Tan，20261104: record pushed phase-VC delivery and protected Windows synchronization blocker. -->

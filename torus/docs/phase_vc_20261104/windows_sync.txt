@@ -1,0 +1,9 @@
+2026-11-04 Windows synchronization attempt
+Repository: E:\Codex-Project\NoC-XY
+Commands: git fetch origin; git pull --ff-only
+Fetch: PASS, remote branch at a837e1ac81ab449212b551a2082c580fe869a5cc
+Pull: ABORTED to protect tracked modifications and untracked files.
+Windows HEAD: cdcc7a9d80226b314da695ee2d2e1af6f6d18e41
+Tracked blockers: AGENTS.md, README.md, board ILA simulation/synthesis scripts, latency monitor/tracker RTL.
+Untracked blockers: congestion RTL/Word reports and existing board synthesis Tcl.
+No overwrite, removal, stash or reset performed.
